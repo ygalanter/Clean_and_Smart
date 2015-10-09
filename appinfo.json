@@ -1,0 +1,66 @@
+{
+    "appKeys": {
+        "KEY_BLUETOOTH_BUZZ": 7,
+        "KEY_DATE_FORMAT": 5,
+        "KEY_HOURS_MINUTES_SEPARATOR": 4,
+        "KEY_INVERT_COLORS": 6,
+        "KEY_JSREADY": 2,
+        "KEY_TEMPERATURE_FORMAT": 3,
+        "KEY_WEATHER_CODE": 0,
+        "KEY_WEATHER_TEMP": 1
+    },
+    "capabilities": [
+        "location",
+        "configurable"
+    ],
+    "companyName": "yuri@galanter.net",
+    "longName": "Clean&Smart",
+    "projectType": "native",
+    "resources": {
+        "media": [
+            {
+                "file": "images/menu.png",
+                "menuIcon": true,
+                "name": "MENU",
+                "type": "png"
+            },
+            {
+                "file": "images/meteocons_Yahoo_Order_V2.png",
+                "name": "METEOICONS",
+                "type": "png"
+            },
+            {
+                "file": "fonts/big_noodle_titling.ttf",
+                "name": "BIG_NOODLE_20",
+                "type": "font"
+            },
+            {
+                "file": "fonts/big_noodle_titling.ttf",
+                "name": "BIG_NOODLE_26",
+                "type": "font"
+            },
+            {
+                "file": "fonts/big_noodle_titling.ttf",
+                "name": "BIG_NOODLE_30",
+                "type": "font"
+            },
+            {
+                "characterRegex": "[0-9:.]",
+                "file": "fonts/big_noodle_titling.ttf",
+                "name": "BIG_NOODLE_69",
+                "type": "font"
+            }
+        ]
+    },
+    "sdkVersion": "3",
+    "shortName": "Clean&Smart",
+    "targetPlatforms": [
+        "aplite",
+        "basalt"
+    ],
+    "uuid": "4d4935d2-a1bb-407e-bb71-d4ed5cae4861",
+    "versionLabel": "1.01",
+    "watchapp": {
+        "watchface": true
+    }
+}
