@@ -1,0 +1,315 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8" />
+    <title>Clean&Smart Config</title>
+    <script type="text/javascript" src="slate.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="slate.min.css" />
+
+    <style type="text/css">
+        .popup {
+            display:none; 
+            background-color:white !important; 
+            position:absolute !important; 
+            top:100px; 
+            height:250px; 
+            width:100%;
+            border:solid 1px darkgray;
+            z-index:1000;
+            overflow:auto;
+        }
+
+    </style>
+
+</head>
+
+<body>
+    
+
+    <div class="item-container">
+        <div class="item-container-header">Clean & Smart Config</div>
+        <div class="item-container-content">
+
+            <label class="item">
+                Display Temperature in
+                <select id="temperatureFormat" class="item-select">
+                    <option id="optF" value="0" class="item-select-option">Fahrenheit</option>
+                    <option id="optC" value="1" class="item-select-option">Celsius</option>
+                </select>
+            </label>
+
+            <label class="item">
+                Hours and Minutes Separator
+                <select id="hoursMinutesSeparator" class="item-select">
+                    <option id="optColon" value="0" class="item-select-option">Colon :</option>
+                    <option id="optDot" value="1" class="item-select-option">Dot .</option>
+                </select>
+            </label>
+
+            <label class="item">
+                Date format
+                <select id="dateFormat" class="item-select">
+                    <option id="optMDY" value="0" class="item-select-option">Month Day Year</option>
+                    <option id="optDMY" value="1" class="item-select-option">Day Month Year</option>
+                    <option id="optYMD" value="2" class="item-select-option" style="display:none">YYYY-MM-DD</option>
+                </select>
+            </label>
+
+            <label class="item" id="xDivLocationSelection" style="display:none">
+                Weather Location
+                <select id="locationService" class="item-select">
+                    <option id="automatic" value="0" class="item-select-option">Automatic</option>
+                    <option id="manual" value="1" class="item-select-option">Manual</option>
+                    <option id="disabled" value="2" class="item-select-option">Disabled</option>
+                </select>
+
+                <div class="item-container" id="xDivWOID" style="display:none">
+                    <div class="item-container-header">Please enter WOEID</div>
+                    <div class="item-container-content">
+                        <label class="item">
+                            <div class="item-input-wrapper item-input-wrapper-button">
+                                <input type="text" id="xtxtWOEID" class="item-input" placeholder="Enter WOEID">
+                            </div>
+                            <input type="button" class=" item-button item-input-button" value="LOOKUP" id="xbtnWOEID" onclick="$('#results').children().remove();$('#xtxtAddress').val('');$('#xDivWOIDlookup').show();">
+                        </label>
+                    </div>
+                </div>
+
+            </label>
+
+            <div class="item-container popup" id="xDivWOIDlookup">
+                <div class="item-container-header">Enter location (city/state/country/postal code)</div>
+                <div class="item-container-content">
+                    <label class="item">
+                        <div class="item-input-wrapper item-input-wrapper-button">
+                            <input type="text" id="xtxtAddress" class="item-input" placeholder="City/state/country/postal code">
+                        </div>
+                        <input type="button" class=" item-button item-input-button" value="LOOKUP" id="xbtnWOEIDlookup">
+                        <div id="results" style="font-size:12px"></div>
+                        <input type="button" class=" item-button" value="Close" id="xbtnWOEIDlookup" style="width:70px; margin-top:10px" onclick="$('#xDivWOIDlookup').hide();">
+                    </label>
+                </div>
+            </div>
+
+            <label class="item" style="display:none" id="xDivWeatherInterval">
+                Weather Update
+                <select id="weatherInterval" class="item-select">
+                    <option id="opt15" value="15" class="item-select-option">Every 15 minutes</option>
+                    <option id="opt30" value="30" class="item-select-option">Every half an hour</option>
+                    <option id="opt60" value="60" class="item-select-option">Every hour</option>
+                </select>
+            </label>
+
+
+            <label class="item">
+                Invert colors
+                <input type="checkbox" class="item-checkbox" name="invertColors" id="invertColors">
+            </label>
+
+            <label class="item">
+                Buzz on BT connect/disconnect
+                <input type="checkbox" class="item-checkbox" name="bluetoothBuzz" id="bluetoothBuzz">
+            </label>
+
+
+        </div>
+    </div>
+
+    <div class="item-container">
+        <div class="button-container">
+            <input type="button" class="item-button" value="SAVE" id="xbtnSave">
+        </div>
+    </div>
+
+    <div class="item-container">
+        <div class="button-container">
+            <input type="button" class="item-button" value="CANCEL" id="xbtnCancel">
+        </div>
+    </div>
+
+    <div class="item-container">
+        <div class="button-container">
+            <input type="button" value="My Starbucks fund" class="item-button" name="submit" onclick="location.href='https://www.paypal.me/yuriygalanter';">
+        </div>
+    </div>
+
+
+    <div class="item-container">
+        <div class="item-container-content">
+            <div class="item" style="font-size:small; line-height:130%">
+                If you like this watchface and would like to see it further developed as well as other wonderful Pebble apps and faces created, please know - I run on coffee. It's an essential fuel for inspiration and creativity. So if you click the Fund button above (or the ad below) - I won't run out of fuel :) Thanks!
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+   
+        // to get value of query string
+        function getURLVariable(name) {
+            name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+            var regexS = "[\\?&]" + name + "=([^&#]*)",
+                regex = new RegExp(regexS),
+                results = regex.exec(window.location.href);
+            if (results == null) return "";
+            else return results[1];
+        }
+
+        $(document).ready(function () {
+
+            if (getURLVariable('version') >= '1.02') $('#xDivLocationSelection').show(); // showing location only for this version and above
+            if (getURLVariable('version') >= '1.03') $('#optYMD').show(); // show this format only for this version & above
+            if (getURLVariable('version') >= '1.04') $('#xDivWeatherInterval').show(); // show weather update interval only for this version & above
+
+
+
+            // loading settings
+            try {
+                settings = JSON.parse(localStorage.getItem("clean_smart_settings"));
+            }
+            catch (err) {
+                settings = null;
+            }
+
+            if (settings == null) {
+                settings = {
+                    temperatureFormat: 0,
+                    hoursMinutesSeparator: 0,
+                    dateFormat: 0,
+                    invertColors: 0,
+                    bluetoothBuzz: 0,
+                    locationService: 0,
+                    woeid: 0,
+                    weatherInterval: 60
+                };
+            }
+
+            // setting checkboxes' values
+            if (settings.invertColors == 1) $('#invertColors').attr('checked', 'checked');
+            if (settings.bluetoothBuzz == 1) $('#bluetoothBuzz').attr('checked', 'checked');
+          
+
+            // setting dropdown values
+            $('#temperatureFormat').val(settings.temperatureFormat);
+            $('#hoursMinutesSeparator').val(settings.hoursMinutesSeparator);
+            $('#dateFormat').val(settings.dateFormat);
+
+            $('#locationService').val(settings.locationService? settings.locationService : 0); // reading location and if manual - setting WOEID as well
+            if (settings.locationService == '1') {
+                $('#xtxtWOEID').val(settings.woeid);
+                $('#xDivWOID').show();
+            } else {
+                $('#xtxtWOEID').val('');
+                $('#xDivWOID').hide();
+            }
+
+            $('#weatherInterval').val(settings.weatherInterval ? settings.weatherInterval : 60); // reading update interval and if not set - make it an hour
+            
+
+            //assigning save button
+
+            $('#xbtnSave').click(function () {
+
+                if ($('#locationService').val() == '1') { // if we selected manual location check and save WOEID
+                    if ($('#xtxtWOEID').val() == '' || isNaN($('#xtxtWOEID').val())) {
+                        alert('Please enter correct WOEID');
+                        return;
+                    }
+                }
+
+                settings.woeid = parseInt($('#xtxtWOEID').val());
+
+                localStorage.setItem("clean_smart_settings", JSON.stringify(settings));
+
+                var location = (decodeURIComponent(getURLVariable('return_to')) || "pebblejs://close#") + encodeURIComponent(JSON.stringify(settings));
+                document.location = location;
+
+            })
+
+            //assigning cancel button
+            $('#xbtnCancel').click(function () {
+
+                var location = decodeURIComponent(getURLVariable('return_to')) || "pebblejs://close#";
+                document.location = location;
+
+            })
+
+            //assigning checkboxes
+            $("input[type=checkbox]").change(function () {
+                settings[this.id] = this.checked ? 1 : 0;
+            });
+
+
+            
+
+            //getting value of dropdowns
+            $('select').change(function (e) {
+                e.preventDefault();
+                var intVal = parseInt(this.value);
+                settings[this.id] = intVal;
+
+                //for location selection also checking if textbox needed for manual WOEID
+                if (this.id == 'locationService') {
+                    if (this.options[this.selectedIndex].id == 'manual') {
+                        $('#xDivWOID').show();
+                    } else {
+                        $('#xDivWOID').hide();
+                    }
+
+                    // disable weather interval if weather is disabled
+                    if (this.options[this.selectedIndex].id == 'disabled') {
+                        $('#weatherInterval').attr('disabled',  'disabled'); 
+                    } else {
+                        $('#weatherInterval').removeAttr('disabled');
+                    }
+
+                    
+                }
+            })
+
+
+            //WOEID lookup
+            $('#xbtnWOEIDlookup').click(function (e) {
+                e.preventDefault();
+                $('#results').children().remove();
+
+                $.getJSON('http://query.yahooapis.com/v1/public/yql', {'q': 'select * from geo.places where text="'+$('#xtxtAddress').val()+'"', 'format': 'json'}, function(data) {
+                    console.log(data);
+
+                    if (data.query.count == 0) { // no results
+                        $('#results').append('<div>No Results</div>');  
+                    } else if (data.query.count == 1) { // single result
+                        result = data.query.results.place;
+                        $('#results').append('<div onclick = "$(\'#xtxtWOEID\').val(' + result.woeid + ');$(\'#xDivWOIDlookup\').hide();">' + result.name + ', ' + result.admin1.content + ' (' + result.admin1.code + ') WOEID: <span style="font-weight:bold">' + result.woeid + '</span></div>');
+                    } else { // no results
+                        for (i = 0; i < data.query.count; i++) {
+                            result = data.query.results.place[i];
+                            $('#results').append('<div onclick = "$(\'#xtxtWOEID\').val(' + result.woeid + ');$(\'#xDivWOIDlookup\').hide();">' + result.name + ', ' + result.admin1.content + ' (' + result.admin1.code + ') WOEID: <span style="font-weight:bold">' + result.woeid + '</span></div>');
+                        }
+                    }
+                })
+
+
+            })
+        }
+     )
+
+    </script>
+
+    <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+    <!-- Pebble Config -->
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-8184318363505287"
+         data-ad-slot="7086382952"
+         data-ad-format="auto"></ins>
+    <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+
+
+
+</body>
+</html>
