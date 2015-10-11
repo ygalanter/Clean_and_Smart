@@ -1,18 +1,15 @@
+var version = '1.04';
+var current_settings;
+
 /*  ****************************************** Weather Section **************************************************** */
 
 function getWeather(woeid) {  
   
   var temperature;
   var icon;
-  var temperature_format; // 0 = F, 1 = C
   
   
-  //reading stored temp format and if not set - using default
-  temperature_format = localStorage.getItem('temperature_format');
-  if (temperature_format == null) temperature_format = 0;
-  
-  
-  var query = 'select item.condition from weather.forecast where woeid =  ' + woeid + ' and u="' + (temperature_format == 0? 'f' : 'c') + '"';
+  var query = 'select item.condition from weather.forecast where woeid =  ' + woeid + ' and u="' + (current_settings.temperatureFormat === 0? 'f' : 'c') + '"';
   console.log(query);
   var url = 'https://query.yahooapis.com/v1/public/yql?q=' + encodeURIComponent(query) + '&format=json&env=store://datatables.org/alltableswithkeys';
   console.log(url);
@@ -93,6 +90,26 @@ function getLocation() {
 // Listen for when the watchface is opened
 Pebble.addEventListener('ready', 
   function(e) {
+    
+    //reading current stored settings
+    try {
+       current_settings = JSON.parse(localStorage.getItem('current_settings'));
+    } catch(ex) {
+       current_settings = null; 
+    }  
+    
+     if (current_settings === null) {
+         current_settings = {
+             temperatureFormat: 0,
+             hoursMinutesSeparator: 0,
+             dateFormat: 0,
+             invertColors: 0,
+             bluetoothBuzz: 0,
+             locationService: 0,
+             woeid: 0
+         };
+     }
+    
     console.log("PebbleKit JS ready!");
     var dictionary = {
         "KEY_JSREADY": 1
@@ -114,7 +131,13 @@ Pebble.addEventListener('ready',
 Pebble.addEventListener('appmessage',
   function(e) {
     console.log("AppMessage received");
-    getLocation();
+    
+    if (current_settings.locationService == 1) { // for manual location - request weather right away
+        getWeather(current_settings.woeid);
+    } else {
+       getLocation();  // for automatic location - get location
+    }
+    
   }                     
 );
 
@@ -124,7 +147,7 @@ Pebble.addEventListener("showConfiguration",
   function(e) {
    
     //Load the remote config page
-    Pebble.openURL("http://codecorner.galanter.net/pebble/clean_smart_config.htm");
+    Pebble.openURL("http://codecorner.galanter.net/pebble/clean_smart_config.htm?version=" + version);
     
   }
 );
@@ -142,7 +165,6 @@ Pebble.addEventListener("webviewclosed",
       console.log(settings);
       
       
-      
       //Send to Pebble
       var app_message_json = {};
 
@@ -151,16 +173,17 @@ Pebble.addEventListener("webviewclosed",
       app_message_json.KEY_DATE_FORMAT = settings.dateFormat;
       app_message_json.KEY_INVERT_COLORS = settings.invertColors;
       app_message_json.KEY_BLUETOOTH_BUZZ = settings.bluetoothBuzz;
+      app_message_json.KEY_LOCATION_SERVICE = settings.locationService;
+      app_message_json.KEY_WEATHER_INTERVAL = settings.weatherInterval;
      
       // only storing and passing to pebble temperature format if it changed, because it will cause Pebble to reissue weather AJAX
-      var temperature_format; // 0 = F, 1 = C
-      temperature_format = localStorage.getItem('temperature_format');
-      
-      if (temperature_format != settings.temperatureFormat) {
-        localStorage.setItem('temperature_format', settings.temperatureFormat);
+      if (current_settings.temperatureFormat != settings.temperatureFormat) {
         app_message_json.KEY_TEMPERATURE_FORMAT = settings.temperatureFormat;
       }
       
+      // storing new settings
+      localStorage.setItem('current_settings', JSON.stringify(settings));
+      current_settings = settings;
       
       Pebble.sendAppMessage(app_message_json,
         function(e) {

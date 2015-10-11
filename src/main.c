@@ -11,14 +11,34 @@ BitmapLayer *temp_layer;
 GBitmap *meteoicons_all, *meteoicon_current;
 
 char s_date[] = "21  FEB  2015     "; //test
-char s_time[] = "88.44"; //test
+char s_time[] = "88.44mm"; //test
 char s_dow[] = "WEDNESDAY     "; //test  
 char s_battery[] = "100%"; //test
 char s_temp[] = "-100°";
 
 EffectLayer *effect_layer;
 
-uint8_t flag_hoursMinutesSeparator, flag_dateFormat, flag_invertColors, flag_bluetoothBuzz;
+uint8_t flag_hoursMinutesSeparator, flag_dateFormat, flag_invertColors, flag_bluetoothBuzz, flag_locationService, flag_weatherInterval;
+
+
+static void toggle_weather_visibility() {
+  
+  if (flag_locationService == 2) { // if weather disabled - hide it and move battery to center
+    
+    layer_set_hidden(text_layer_get_layer(text_temp), true);
+    layer_set_hidden(bitmap_layer_get_layer(temp_layer), true);
+    layer_set_frame(text_layer_get_layer(text_battery), GRect(49, -1, 43, 21));
+    
+  } else { // otherwise show weather and move battery to edge
+    
+    layer_set_hidden(text_layer_get_layer(text_temp), false);
+    layer_set_hidden(bitmap_layer_get_layer(temp_layer), false);
+    layer_set_frame(text_layer_get_layer(text_battery), GRect(98, -1, 43, 21));
+   
+  }
+  
+  
+}
 
 
 static void invert_colors() {
@@ -34,8 +54,8 @@ static void invert_colors() {
 
 //calling for weather update
 static void update_weather() {
-  // Only grab the weather if we can talk to phone
-  if (bluetooth_connection_service_peek()) {
+  // Only grab the weather if we can talk to phone AND weather is enabled
+  if (flag_locationService != 2 && bluetooth_connection_service_peek()) {
     APP_LOG(APP_LOG_LEVEL_INFO, "Phone is connected!");
     
 //     DictionaryIterator *iter;
@@ -69,36 +89,55 @@ static void show_icon(int w_icon) {
 void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   
    char format[5];
-  
+     
    // building format 12h/24h
    if (clock_is_24h_style()) {
-      strcpy(format, "%H:%M");
+      strcpy(format, "%H:%M"); // e.g "14:46"
    } else {
-      strcpy(format, "%I:%M");
+      strcpy(format, "%l:%M"); // e.g " 2:46" -- with leading space
    }
+  
   
    // if separator is dot = replacing colon with it
    if (flag_hoursMinutesSeparator == 1) format[2] = '.';
   
-    if (units_changed & MINUTE_UNIT) { // on minutes change - change time
-      strftime(s_time, sizeof(s_time), format, tick_time);
-      text_layer_set_text(text_time, s_time);
-    }  
-  
-    if (units_changed & HOUR_UNIT) { // on hour change - check weather
+   if (units_changed & MINUTE_UNIT) { // on minutes change - change time
+     strftime(s_time, sizeof(s_time), format, tick_time);
+     
+     if (s_time[0] == ' ') { // if in 12h mode we have leading space in time - don't display it (it will screw centering of text) start with next char
+       text_layer_set_text(text_time, &s_time[1]);
+     } else {
+       text_layer_set_text(text_time, s_time);  
+     }
+     
+     if (!(tick_time->tm_min % flag_weatherInterval)) { // on configured weather interval change - update the weather
         update_weather();
-    }  
-    
-    if (units_changed & DAY_UNIT) { // on day change - change date
-      if (flag_dateFormat == 0)
-        strftime(s_date, sizeof(s_date), "%b  %d  %Y", tick_time);
-      else  
-        strftime(s_date, sizeof(s_date), "%d  %b  %Y", tick_time);
-      text_layer_set_text(text_date, s_date);
-    
-      strftime(s_dow, sizeof(s_dow), "%A", tick_time);
-      text_layer_set_text(text_dow, s_dow);
-    }
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Updated weather at %d min on %d interval", tick_time->tm_min, flag_weatherInterval);
+     } 
+   }  
+
+  
+   
+   if (units_changed & DAY_UNIT) { // on day change - change date (format depends on flag)
+     
+     switch(flag_dateFormat){
+       case 0:
+         strftime(s_date, sizeof(s_date), "%b  %d  %Y", tick_time); // "DEC 10 2015"
+         break;
+       case 1:
+         strftime(s_date, sizeof(s_date), "%d  %b  %Y", tick_time); // "10 DEC 2015"
+         break;
+       case 2:
+         strftime(s_date, sizeof(s_date), "%Y-%m-%d", tick_time);  // "2015-12-10"
+         break;
+       
+     }
+
+     text_layer_set_text(text_date, s_date);
+   
+     strftime(s_dow, sizeof(s_dow), "%A", tick_time);
+     text_layer_set_text(text_dow, s_dow);
+   }
   
 }
 
@@ -138,24 +177,46 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       case KEY_TEMPERATURE_FORMAT: //if temp format changed from F to C or back - need re-request weather
         need_weather = 1;
       case KEY_HOURS_MINUTES_SEPARATOR:
-        persist_write_int(KEY_HOURS_MINUTES_SEPARATOR, t->value->int32);
-        flag_hoursMinutesSeparator = t->value->int32;
-        need_time = 1;
+        if (t->value->int32 != flag_hoursMinutesSeparator) {
+          persist_write_int(KEY_HOURS_MINUTES_SEPARATOR, t->value->int32);
+          flag_hoursMinutesSeparator = t->value->int32;
+          need_time = 1;
+        } 
         break;
       case KEY_DATE_FORMAT:
-        persist_write_int(KEY_DATE_FORMAT, t->value->int32);
-        flag_dateFormat = t->value->int32;
-        need_time = 1;
+        if (t->value->int32 !=flag_dateFormat) {
+          persist_write_int(KEY_DATE_FORMAT, t->value->int32);
+          flag_dateFormat = t->value->int32;
+          need_time = 1;
+        }  
         break;
       case KEY_BLUETOOTH_BUZZ:
-        persist_write_int(KEY_BLUETOOTH_BUZZ, t->value->int32);
-        flag_bluetoothBuzz = t->value->int32;
+        if (t->value->int32 !=flag_bluetoothBuzz) {
+          persist_write_int(KEY_BLUETOOTH_BUZZ, t->value->int32);
+          flag_bluetoothBuzz = t->value->int32;
+        }  
         break;
       case KEY_INVERT_COLORS:
-        persist_write_int(KEY_INVERT_COLORS, t->value->int32);
-        flag_invertColors = t->value->int32;
-        invert_colors();
+        if (t->value->int32 != flag_invertColors) {
+          persist_write_int(KEY_INVERT_COLORS, t->value->int32);
+          flag_invertColors = t->value->int32;
+          invert_colors();
+        }
         break;
+      case KEY_LOCATION_SERVICE:
+         if (t->value->int32 != flag_locationService) {
+           persist_write_int(KEY_LOCATION_SERVICE, t->value->int32);
+           flag_locationService = t->value->int32;
+           toggle_weather_visibility();  
+           need_weather = 1;
+         }  
+      case KEY_WEATHER_INTERVAL:
+      if (t->value->int32 != flag_weatherInterval) {
+           persist_write_int(KEY_WEATHER_INTERVAL, t->value->int32);
+           flag_weatherInterval = t->value->int32;
+           need_weather = 1;
+           APP_LOG(APP_LOG_LEVEL_DEBUG, "Updated weather interval to %d min", flag_weatherInterval);
+         }  
       
       }   
     
@@ -287,7 +348,7 @@ void handle_init(void) {
   layer_add_child(window_layer, graphics_layer);
   
   text_dow = create_text_layer(GRect(0,29,144,31), RESOURCE_ID_BIG_NOODLE_30, GTextAlignmentCenter);
-  text_time = create_text_layer(GRect(0,52,144,70), RESOURCE_ID_BIG_NOODLE_69, GTextAlignmentCenter);
+  text_time = create_text_layer(GRect(-20,52,184,70), RESOURCE_ID_BIG_NOODLE_69, GTextAlignmentCenter);
   text_date = create_text_layer(GRect(0,128,144,27), RESOURCE_ID_BIG_NOODLE_26, GTextAlignmentCenter);
   text_battery = create_text_layer(GRect(98, -1, 43, 21), RESOURCE_ID_BIG_NOODLE_20, GTextAlignmentRight);
   text_temp = create_text_layer(GRect(3, -1, 80, 21), RESOURCE_ID_BIG_NOODLE_20, GTextAlignmentLeft);
@@ -322,8 +383,12 @@ void handle_init(void) {
   flag_dateFormat = persist_exists(KEY_DATE_FORMAT)? persist_read_int(KEY_DATE_FORMAT) : 0;
   flag_invertColors = persist_exists(KEY_INVERT_COLORS)? persist_read_int(KEY_INVERT_COLORS) : 0;
   flag_bluetoothBuzz = persist_exists(KEY_BLUETOOTH_BUZZ)? persist_read_int(KEY_BLUETOOTH_BUZZ) : 0;
+  flag_locationService = persist_exists(KEY_LOCATION_SERVICE)? persist_read_int(KEY_LOCATION_SERVICE) : 0;
+  flag_weatherInterval = persist_exists(KEY_WEATHER_INTERVAL)? persist_read_int(KEY_WEATHER_INTERVAL) : 60; // default weather update is 1 hour
+  
   
   invert_colors(); //initial check for inverting colors;
+  toggle_weather_visibility(); //initial check for enable/disable weather
   
   // initial bluetooth check
   flag_bluetoothBuzz = 0;

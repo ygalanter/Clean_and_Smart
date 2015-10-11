@@ -5,8 +5,10 @@
         "KEY_HOURS_MINUTES_SEPARATOR": 4,
         "KEY_INVERT_COLORS": 6,
         "KEY_JSREADY": 2,
+        "KEY_LOCATION_SERVICE": 8,
         "KEY_TEMPERATURE_FORMAT": 3,
         "KEY_WEATHER_CODE": 0,
+        "KEY_WEATHER_INTERVAL": 9,
         "KEY_WEATHER_TEMP": 1
     },
     "capabilities": [
@@ -19,7 +21,7 @@
     "resources": {
         "media": [
             {
-                "file": "images/menu.png",
+                "file": "images/icon_bw.png",
                 "menuIcon": true,
                 "name": "MENU",
                 "type": "png"
@@ -30,8 +32,14 @@
                 "type": "png"
             },
             {
+                "characterRegex": "[0-9:.amp ]",
                 "file": "fonts/big_noodle_titling.ttf",
-                "name": "BIG_NOODLE_20",
+                "name": "BIG_NOODLE_69",
+                "type": "font"
+            },
+            {
+                "file": "fonts/big_noodle_titling.ttf",
+                "name": "BIG_NOODLE_30",
                 "type": "font"
             },
             {
@@ -41,13 +49,7 @@
             },
             {
                 "file": "fonts/big_noodle_titling.ttf",
-                "name": "BIG_NOODLE_30",
-                "type": "font"
-            },
-            {
-                "characterRegex": "[0-9:.]",
-                "file": "fonts/big_noodle_titling.ttf",
-                "name": "BIG_NOODLE_69",
+                "name": "BIG_NOODLE_20",
                 "type": "font"
             }
         ]
@@ -59,7 +61,7 @@
         "basalt"
     ],
     "uuid": "4d4935d2-a1bb-407e-bb71-d4ed5cae4861",
-    "versionLabel": "1.01",
+    "versionLabel": "1.04",
     "watchapp": {
         "watchface": true
     }
