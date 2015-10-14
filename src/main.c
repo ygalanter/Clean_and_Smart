@@ -19,7 +19,7 @@ char s_temp[] = "-100°";
 EffectLayer *effect_layer;
 
 uint8_t flag_hoursMinutesSeparator, flag_dateFormat, flag_invertColors, flag_bluetoothBuzz, flag_locationService, flag_weatherInterval;
-bool flag_messaging_is_busy = false;
+bool flag_messaging_is_busy = false, flag_js_is_ready = false;
 
 
 static void toggle_weather_visibility() {
@@ -55,9 +55,9 @@ static void invert_colors() {
 
 //calling for weather update
 static void update_weather() {
-  // Only grab the weather if we can talk to phone AND weather is enabled AND currently message is not being processed
-  if (flag_locationService != 2 && bluetooth_connection_service_peek() && !flag_messaging_is_busy) {
-    // APP_LOG(// APP_LOG_LEVEL_INFO, "**** I am inside 'update_weather()' about to request weather from the phone ***");
+  // Only grab the weather if we can talk to phone AND weather is enabled AND currently message is not being processed and JS on phone is ready
+  if (flag_locationService != 2 && bluetooth_connection_service_peek() && !flag_messaging_is_busy && flag_js_is_ready) {
+    APP_LOG(APP_LOG_LEVEL_INFO, "**** I am inside 'update_weather()' about to request weather from the phone ***");
     
 //     DictionaryIterator *iter;
 //     app_message_outbox_begin(&iter);
@@ -69,13 +69,13 @@ static void update_weather() {
 //     dict_write_tuplet(iter, &dictionary[1]);
      flag_messaging_is_busy = true;
      int msg_result = app_message_outbox_send();
-    // APP_LOG(// APP_LOG_LEVEL_INFO, "**** I am inside 'update_weather()' message sent and result code = %d***", msg_result);
+    APP_LOG(APP_LOG_LEVEL_INFO, "**** I am inside 'update_weather()' message sent and result code = %d***", msg_result);
   } 
 }
 
 // showing temp
 static void show_temperature(int w_current) {
-    // APP_LOG(// APP_LOG_LEVEL_INFO, "**** I am inside 'show_temperature()'; TEMP in Pebble: %d", w_current);
+    APP_LOG(APP_LOG_LEVEL_INFO, "**** I am inside 'show_temperature()'; TEMP in Pebble: %d", w_current);
     static char buffer[6];
     snprintf(buffer, sizeof(buffer), "%i\u00B0", w_current);
     text_layer_set_text(text_temp, buffer);
@@ -114,7 +114,7 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
      }
      
      if (!(tick_time->tm_min % flag_weatherInterval)) { // on configured weather interval change - update the weather
-        // APP_LOG(// APP_LOG_LEVEL_INFO, "**** I am inside 'tick_handler()' about to call 'update_weather();' at minute %d min on %d interval", tick_time->tm_min, flag_weatherInterval);
+        APP_LOG(APP_LOG_LEVEL_INFO, "**** I am inside 'tick_handler()' about to call 'update_weather();' at minute %d min on %d interval", tick_time->tm_min, flag_weatherInterval);
         update_weather();
      } 
    }  
@@ -147,7 +147,7 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
-  // APP_LOG(// APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' Message from the phone received!");
+  APP_LOG(APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' Message from the phone received!");
 
   // Read first item
   Tuple *t = dict_read_first(iterator);
@@ -172,14 +172,15 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       case KEY_JSREADY:
         // JS ready lets get the weather
         if (t->value->int16) {
-          // APP_LOG(// APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' message 'JS is ready' received !");
+          APP_LOG(APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' message 'JS is ready' received !");
+          flag_js_is_ready = true;
           need_weather = 1;
         }
         break;
       
        // config keys
       case KEY_TEMPERATURE_FORMAT: //if temp format changed from F to C or back - need re-request weather
-        // APP_LOG(// APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' switching temp format");
+        APP_LOG(APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' switching temp format");
         need_weather = 1;
       case KEY_HOURS_MINUTES_SEPARATOR:
         if (t->value->int32 != flag_hoursMinutesSeparator) {
@@ -214,14 +215,14 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
            flag_locationService = t->value->int32;
            toggle_weather_visibility();  
            need_weather = 1;
-           // APP_LOG(// APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' location set to %d type", flag_locationService);
+           APP_LOG(APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' location set to %d type", flag_locationService);
          }  
       case KEY_WEATHER_INTERVAL:
       if (t->value->int32 != flag_weatherInterval && t->value->int32 !=1) { // precaution, dunno why we get 1 here as well
            persist_write_int(KEY_WEATHER_INTERVAL, t->value->int32);
            flag_weatherInterval = t->value->int32;
            need_weather = 1;
-           // APP_LOG(// APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' Weather interval set to interval to %d min", flag_weatherInterval);
+           APP_LOG(APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' Weather interval set to interval to %d min", flag_weatherInterval);
          }  
       
       }   
@@ -231,7 +232,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   }
   
   if (need_weather) {
-    // APP_LOG(// APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' about to call 'update_weather();");
+    APP_LOG(APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' about to call 'update_weather();");
     update_weather();
   }
   
@@ -247,17 +248,17 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 }
 
 static void inbox_dropped_callback(AppMessageResult reason, void *context) {
-  // APP_LOG(// APP_LOG_LEVEL_ERROR, "____Message dropped!");
+  APP_LOG(APP_LOG_LEVEL_ERROR, "____Message dropped!");
 }
 
 static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
   flag_messaging_is_busy = false;
-  // APP_LOG(// APP_LOG_LEVEL_ERROR, "____Outbox send failed!");
+  APP_LOG(APP_LOG_LEVEL_ERROR, "____Outbox send failed!");
 }
 
 static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
   flag_messaging_is_busy = false;
-  // APP_LOG(// APP_LOG_LEVEL_INFO, "_____Outbox send success!");
+  APP_LOG(APP_LOG_LEVEL_INFO, "_____Outbox send success!");
 } 
   
 
@@ -278,7 +279,7 @@ static void bluetooth_handler(bool state) {
   if (flag_bluetoothBuzz == 1) vibes_short_pulse();
   
   if (state){
-    // APP_LOG(// APP_LOG_LEVEL_INFO, "***** I am inside of 'bluetooth_handler()' about to call 'update_weather();");
+    APP_LOG(APP_LOG_LEVEL_INFO, "***** I am inside of 'bluetooth_handler()' about to call 'update_weather();");
     update_weather();
   } 
     
