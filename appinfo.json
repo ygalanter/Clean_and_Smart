@@ -21,15 +21,9 @@
     "resources": {
         "media": [
             {
-                "file": "images/icon_bw.png",
-                "menuIcon": true,
-                "name": "MENU",
-                "type": "png"
-            },
-            {
-                "file": "images/meteocons_Yahoo_Order_V2.png",
-                "name": "METEOICONS",
-                "type": "png"
+                "file": "fonts/big_noodle_titling.ttf",
+                "name": "BIG_NOODLE_15",
+                "type": "font"
             },
             {
                 "characterRegex": "[0-9:.amp ]",
@@ -51,6 +45,28 @@
                 "file": "fonts/big_noodle_titling.ttf",
                 "name": "BIG_NOODLE_20",
                 "type": "font"
+            },
+            {
+                "characterRegex": "[0-9:.amp ]",
+                "file": "fonts/big_noodle_titling.ttf",
+                "name": "BIG_NOODLE_65",
+                "type": "font"
+            },
+            {
+                "file": "images/icon_bw.png",
+                "menuIcon": true,
+                "name": "MENU",
+                "type": "png"
+            },
+            {
+                "file": "images/meteocons_Yahoo_Order_V2.png",
+                "name": "METEOICONS",
+                "targetPlatforms": [
+                    "aplite",
+                    "basalt",
+                    "chalk"
+                ],
+                "type": "png"
             }
         ]
     },
@@ -58,10 +74,11 @@
     "shortName": "Clean&Smart",
     "targetPlatforms": [
         "aplite",
-        "basalt"
+        "basalt",
+        "chalk"
     ],
     "uuid": "4d4935d2-a1bb-407e-bb71-d4ed5cae4861",
-    "versionLabel": "1.06",
+    "versionLabel": "2.01",
     "watchapp": {
         "watchface": true
     }

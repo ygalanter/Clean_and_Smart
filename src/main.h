@@ -12,8 +12,14 @@
 #define KEY_LOCATION_SERVICE 8  
 #define KEY_WEATHER_INTERVAL 9  
   
-#define KEY_LOCATION_AUTOMATIC = 0  
-#define KEY_LOCATION_MANUAL = 1
-#define KEY_LOCATION_DISABLED = 2
+#define KEY_LOCATION_AUTOMATIC  0  
+#define KEY_LOCATION_MANUAL  1
+#define KEY_LOCATION_DISABLED  2
   
-  
+#ifdef PBL_RECT
+  int ICON_WIDTH  = 40;
+  int ICON_HEIGHT  = 20;
+#else
+  int ICON_WIDTH = 36;
+  int ICON_HEIGHT = 18;
+#endif
