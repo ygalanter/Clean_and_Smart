@@ -1,6 +1,7 @@
 #include <pebble.h>
 #include "main.h"
 #include "effect_layer.h"  
+#include "languages.h"
   
 Window *my_window;  
 Layer *window_layer;
@@ -18,7 +19,7 @@ char s_temp[] = "-100°";
 
 EffectLayer *effect_layer;
 
-uint8_t flag_hoursMinutesSeparator, flag_dateFormat, flag_invertColors, flag_bluetoothBuzz, flag_locationService, flag_weatherInterval;
+uint8_t flag_hoursMinutesSeparator, flag_dateFormat, flag_invertColors, flag_bluetoothBuzz, flag_locationService, flag_weatherInterval, flag_language;
 bool flag_messaging_is_busy = false, flag_js_is_ready = false;
 
 GRect bounds;
@@ -32,7 +33,7 @@ static void toggle_weather_visibility() {
     layer_set_hidden(text_layer_get_layer(text_temp), true);
     layer_set_hidden(bitmap_layer_get_layer(temp_layer), true);
     #ifdef PBL_RECT
-      layer_set_frame(text_layer_get_layer(text_battery), GRect(49, -1, 43, 21));
+      layer_set_frame(text_layer_get_layer(text_battery), GRect(49, 0, 43, 21));
     #endif
     
   } else { // otherwise show weather and move battery to edge
@@ -40,7 +41,7 @@ static void toggle_weather_visibility() {
     layer_set_hidden(text_layer_get_layer(text_temp), false);
     layer_set_hidden(bitmap_layer_get_layer(temp_layer), false);
     #ifdef PBL_RECT
-      layer_set_frame(text_layer_get_layer(text_battery), GRect(98, -1, 43, 21));
+      layer_set_frame(text_layer_get_layer(text_battery), GRect(98, 0, 43, 21));
     #endif
    
   }
@@ -64,7 +65,7 @@ static void invert_colors() {
 static void update_weather() {
   // Only grab the weather if we can talk to phone AND weather is enabled AND currently message is not being processed and JS on phone is ready
   if (flag_locationService != 2 && bluetooth_connection_service_peek() && !flag_messaging_is_busy && flag_js_is_ready) {
-    //APP_LOG(//APP_LOG_LEVEL_INFO, "**** I am inside 'update_weather()' about to request weather from the phone ***");
+    // APP_LOG(APP_LOG_LEVEL_INFO, "**** I am inside 'update_weather()' about to request weather from the phone ***");
     
     //need to have some data - sending dummy
     DictionaryIterator *iter;
@@ -75,14 +76,14 @@ static void update_weather() {
     dict_write_tuplet(iter, &dictionary[0]);
     
      flag_messaging_is_busy = true;
-     int msg_result = app_message_outbox_send();
-    //APP_LOG(//APP_LOG_LEVEL_INFO, "**** I am inside 'update_weather()' message sent and result code = %d***", msg_result);
+     int msg_result = app_message_outbox_send(); // need to assign result for successfull call
+     // APP_LOG(APP_LOG_LEVEL_INFO, "**** I am inside 'update_weather()' message sent and result code = %d***", msg_result);
   } 
 }
 
 // showing temp
 static void show_temperature(int w_current) {
-    //APP_LOG(//APP_LOG_LEVEL_INFO, "**** I am inside 'show_temperature()'; TEMP in Pebble: %d", w_current);
+    // APP_LOG(APP_LOG_LEVEL_INFO, "**** I am inside 'show_temperature()'; TEMP in Pebble: %d", w_current);
     static char buffer[6];
     snprintf(buffer, sizeof(buffer), "%i\u00B0", w_current);
     text_layer_set_text(text_temp, buffer);
@@ -120,8 +121,9 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
        text_layer_set_text(text_time, s_time);  
      }
      
+     
      if (!(tick_time->tm_min % flag_weatherInterval)) { // on configured weather interval change - update the weather
-        //APP_LOG(//APP_LOG_LEVEL_INFO, "**** I am inside 'tick_handler()' about to call 'update_weather();' at minute %d min on %d interval", tick_time->tm_min, flag_weatherInterval);
+        // APP_LOG(APP_LOG_LEVEL_INFO, "**** I am inside 'tick_handler()' about to call 'update_weather();' at minute %d min on %d interval", tick_time->tm_min, flag_weatherInterval);
         update_weather();
      } 
    }  
@@ -132,10 +134,20 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
      
      switch(flag_dateFormat){
        case 0:
-         strftime(s_date, sizeof(s_date), "%b %d %Y", tick_time); // "DEC 10 2015"
+         strftime(s_date, sizeof(s_date), "%b-%d-%Y", tick_time); // "DEC 10 2015"
+        
+         if (flag_language != LANG_DEFAULT) { // if custom language is set - pull from language array
+           strncpy(&s_date[0], LANG_MONTH[flag_language][tick_time->tm_mon], 3);
+         }  
+       
          break;
        case 1:
-         strftime(s_date, sizeof(s_date), "%d %b %Y", tick_time); // "10 DEC 2015"
+         strftime(s_date, sizeof(s_date), "%d-%b-%Y", tick_time); // "10 DEC 2015"
+       
+         if (flag_language != LANG_DEFAULT) { // if custom language is set - pull from language array
+           strncpy(&s_date[3], LANG_MONTH[flag_language][tick_time->tm_mon], 3); 
+         }  
+       
          break;
        case 2:
          strftime(s_date, sizeof(s_date), "%Y-%m-%d", tick_time);  // "2015-12-10"
@@ -144,9 +156,14 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
      }
 
      text_layer_set_text(text_date, s_date);
-   
-     strftime(s_dow, sizeof(s_dow), "%A", tick_time);
-     text_layer_set_text(text_dow, s_dow);
+     
+     if (flag_language != LANG_DEFAULT) { // if custom language is set - pull from language array
+         text_layer_set_text(text_dow, LANG_DAY[flag_language][tick_time->tm_wday]);
+     } else {  
+         strftime(s_dow, sizeof(s_dow), "%A", tick_time);
+         text_layer_set_text(text_dow, s_dow);
+     }
+     
    }
   
 }
@@ -154,7 +171,7 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
-  //APP_LOG(//APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' Message from the phone received!");
+  // APP_LOG(APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' Message from the phone received!");
 
   // Read first item
   Tuple *t = dict_read_first(iterator);
@@ -179,7 +196,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       case KEY_JSREADY:
         // JS ready lets get the weather
         if (t->value->int16) {
-          //APP_LOG(//APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' message 'JS is ready' received !");
+          // APP_LOG(APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' message 'JS is ready' received !");
           flag_js_is_ready = true;
           need_weather = 1;
         }
@@ -187,7 +204,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       
        // config keys
       case KEY_TEMPERATURE_FORMAT: //if temp format changed from F to C or back - need re-request weather
-        //APP_LOG(//APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' switching temp format");
+        // APP_LOG(APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' switching temp format");
         need_weather = 1;
       case KEY_HOURS_MINUTES_SEPARATOR:
         if (t->value->int32 != flag_hoursMinutesSeparator) {
@@ -222,15 +239,24 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
            flag_locationService = t->value->int32;
            toggle_weather_visibility();  
            need_weather = 1;
-           //APP_LOG(//APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' location set to %d type", flag_locationService);
+           // APP_LOG(APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' location set to %d type", flag_locationService);
          }  
+         break;
       case KEY_WEATHER_INTERVAL:
       if (t->value->int32 != flag_weatherInterval && t->value->int32 !=1) { // precaution, dunno why we get 1 here as well
            persist_write_int(KEY_WEATHER_INTERVAL, t->value->int32);
            flag_weatherInterval = t->value->int32;
            need_weather = 1;
-           //APP_LOG(//APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' Weather interval set to interval to %d min", flag_weatherInterval);
-         }  
+           // APP_LOG(APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' Weather interval set to interval to %d min", flag_weatherInterval);
+         }
+         break;
+      case KEY_LANGUAGE:
+        if (t->value->int32 !=flag_language) {
+          persist_write_int(KEY_LANGUAGE, t->value->int32);
+          flag_language = t->value->int32;
+          need_time = 1;
+        }  
+        break;
       
       }   
     
@@ -239,7 +265,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   }
   
   if (need_weather) {
-    //APP_LOG(//APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' about to call 'update_weather();");
+    // APP_LOG(APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' about to call 'update_weather();");
     update_weather();
   }
   
@@ -255,17 +281,17 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 }
 
 static void inbox_dropped_callback(AppMessageResult reason, void *context) {
-  //APP_LOG(//APP_LOG_LEVEL_ERROR, "____Message dropped!");
+  // APP_LOG(APP_LOG_LEVEL_ERROR, "____Message dropped!");
 }
 
 static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
   flag_messaging_is_busy = false;
-  //APP_LOG(//APP_LOG_LEVEL_ERROR, "____Outbox send failed!");
+  // APP_LOG(APP_LOG_LEVEL_ERROR, "____Outbox send failed!");
 }
 
 static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
   flag_messaging_is_busy = false;
-  //APP_LOG(//APP_LOG_LEVEL_INFO, "_____Outbox send success!");
+  // APP_LOG(APP_LOG_LEVEL_INFO, "_____Outbox send success!");
 } 
   
 
@@ -286,7 +312,7 @@ static void bluetooth_handler(bool state) {
   if (flag_bluetoothBuzz == 1) vibes_short_pulse();
   
   if (state){
-    //APP_LOG(//APP_LOG_LEVEL_INFO, "***** I am inside of 'bluetooth_handler()' about to call 'update_weather();");
+    // APP_LOG(APP_LOG_LEVEL_INFO, "***** I am inside of 'bluetooth_handler()' about to call 'update_weather();");
     update_weather();
   } 
     
@@ -300,6 +326,8 @@ static void graphics_update_proc(Layer *layer, GContext *ctx) {
   static GColor color;  
   
   #ifdef PBL_COLOR
+  
+   graphics_context_set_antialiased(ctx, flag_invertColors == 0); // if we're doing inversion - disable antialiasing
     
 // doing battery color in ranges with fall thru:
 //       100% - 50% - GColorJaegerGreen
@@ -323,14 +351,14 @@ static void graphics_update_proc(Layer *layer, GContext *ctx) {
    #else
      color = GColorWhite;
    #endif
-   
+  
    #ifdef PBL_RECT // on Aplite & Basalt draw think line for battery
      graphics_context_set_fill_color(ctx, color);
      graphics_fill_rect(ctx, GRect(0,25,144,3), 0, GCornersAll);
    #else // on Chalk draw think circle
-     graphics_context_set_stroke_width(ctx, 6);
+     graphics_context_set_stroke_width(ctx, 4);
      graphics_context_set_stroke_color(ctx, color);
-     graphics_draw_circle(ctx, center, 83);
+     graphics_draw_circle(ctx, center, 85);
    #endif
   
   if (bluetooth_connection_service_peek()) {
@@ -341,10 +369,10 @@ static void graphics_update_proc(Layer *layer, GContext *ctx) {
     #endif
     
     #ifdef PBL_RECT // on Aplite & Basalt draw think line
-      graphics_fill_rect(ctx, GRect(0,164,144,3), 0, GCornersAll);  
+      graphics_fill_rect(ctx, GRect(0,165,144,3), 0, GCornersAll);  
     #else // on Chalk draw think circle
       graphics_context_set_stroke_color(ctx, GColorCyan);
-      graphics_draw_circle(ctx, center, 74);
+      graphics_draw_circle(ctx, center, 76);
     #endif
   }
   
@@ -375,7 +403,7 @@ static void battery_handler(BatteryChargeState state) {
          case 10: 
          case 0:  color = GColorDarkCandyAppleRed; break;     
      }
-  
+   
      text_layer_set_text_color(text_battery, color);
   #endif
   
@@ -408,22 +436,22 @@ void handle_init(void) {
   #ifdef PBL_RECT
     temp_layer =  bitmap_layer_create(GRect(51, 1, 41, 20));
   #else
-    temp_layer =  bitmap_layer_create(GRect(86, 132, 41, 21));
+    temp_layer =  bitmap_layer_create(GRect(86, 136, 41, 21));
   #endif
   layer_add_child(window_layer, bitmap_layer_get_layer(temp_layer));
   
   #ifdef PBL_RECT
-    text_dow = create_text_layer(GRect(0,29,bounds.size.w,31), RESOURCE_ID_BIG_NOODLE_30, GTextAlignmentCenter);
-    text_time = create_text_layer(GRect(0,52,bounds.size.w,70), RESOURCE_ID_BIG_NOODLE_69, GTextAlignmentCenter);
-    text_date = create_text_layer(GRect(0,128,bounds.size.w,27), RESOURCE_ID_BIG_NOODLE_26, GTextAlignmentCenter);
-    text_battery = create_text_layer(GRect(98, -1, 43, 21), RESOURCE_ID_BIG_NOODLE_20, GTextAlignmentRight);
-    text_temp = create_text_layer(GRect(3, -1, 80, 21), RESOURCE_ID_BIG_NOODLE_20, GTextAlignmentLeft);
+    text_dow = create_text_layer(GRect(0,30,bounds.size.w,31), RESOURCE_ID_BIG_NOODLE_30, GTextAlignmentCenter);
+    text_time = create_text_layer(GRect(0,53,bounds.size.w,70), RESOURCE_ID_BIG_NOODLE_69, GTextAlignmentCenter);
+    text_date = create_text_layer(GRect(0,129,bounds.size.w,27), RESOURCE_ID_BIG_NOODLE_26, GTextAlignmentCenter);
+    text_battery = create_text_layer(GRect(98, 0, 43, 21), RESOURCE_ID_BIG_NOODLE_19, GTextAlignmentRight);
+    text_temp = create_text_layer(GRect(3, 0, 80, 21), RESOURCE_ID_BIG_NOODLE_19, GTextAlignmentLeft);
   #else
-    text_dow = create_text_layer(GRect(0,32,bounds.size.w,31), RESOURCE_ID_BIG_NOODLE_20, GTextAlignmentCenter);
-    text_time = create_text_layer(GRect(0,42,bounds.size.w,70), RESOURCE_ID_BIG_NOODLE_65, GTextAlignmentCenter);
-    text_date = create_text_layer(GRect(35,113,70,27), RESOURCE_ID_BIG_NOODLE_15, GTextAlignmentRight);
-    text_battery = create_text_layer(GRect(109, 113, 40, 21), RESOURCE_ID_BIG_NOODLE_15, GTextAlignmentLeft);
-    text_temp = create_text_layer(GRect(49, 134, 41, 20), RESOURCE_ID_BIG_NOODLE_15, GTextAlignmentRight);
+    text_dow = create_text_layer(GRect(0,29,bounds.size.w,31), RESOURCE_ID_BIG_NOODLE_20, GTextAlignmentCenter);
+    text_time = create_text_layer(GRect(0,39,bounds.size.w,70), RESOURCE_ID_BIG_NOODLE_69, GTextAlignmentCenter);
+    text_date = create_text_layer(GRect(36,113,75,27), RESOURCE_ID_BIG_NOODLE_16, GTextAlignmentLeft);
+    text_battery = create_text_layer(GRect(105, 113, 40, 21), RESOURCE_ID_BIG_NOODLE_16, GTextAlignmentRight);
+    text_temp = create_text_layer(GRect(48, 137, 41, 20), RESOURCE_ID_BIG_NOODLE_16, GTextAlignmentRight);
   #endif
  
   //getting battery info
@@ -458,6 +486,7 @@ void handle_init(void) {
   flag_bluetoothBuzz = persist_exists(KEY_BLUETOOTH_BUZZ)? persist_read_int(KEY_BLUETOOTH_BUZZ) : 0;
   flag_locationService = persist_exists(KEY_LOCATION_SERVICE)? persist_read_int(KEY_LOCATION_SERVICE) : 0;
   flag_weatherInterval = persist_exists(KEY_WEATHER_INTERVAL)? persist_read_int(KEY_WEATHER_INTERVAL) : 60; // default weather update is 1 hour
+  flag_language = persist_exists(KEY_LANGUAGE)? persist_read_int(KEY_LANGUAGE) : LANG_DEFAULT; // default - language set by pebble
   
   
   invert_colors(); //initial check for inverting colors;
@@ -490,12 +519,14 @@ void handle_deinit(void) {
   text_layer_destroy(text_time);
   text_layer_destroy(text_dow);
   text_layer_destroy(text_battery);
+  text_layer_destroy(text_temp);
   
   gbitmap_destroy(meteoicons_all);
   gbitmap_destroy(meteoicon_current);
   bitmap_layer_destroy(temp_layer);
   
   effect_layer_destroy(effect_layer);
+  layer_destroy(graphics_layer);
   
   window_destroy(my_window);
   app_message_deregister_callbacks();

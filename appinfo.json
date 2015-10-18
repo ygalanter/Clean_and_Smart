@@ -5,6 +5,7 @@
         "KEY_HOURS_MINUTES_SEPARATOR": 4,
         "KEY_INVERT_COLORS": 6,
         "KEY_JSREADY": 2,
+        "KEY_LANGUAGE": 10,
         "KEY_LOCATION_SERVICE": 8,
         "KEY_TEMPERATURE_FORMAT": 3,
         "KEY_WEATHER_CODE": 0,
@@ -21,19 +22,24 @@
     "resources": {
         "media": [
             {
-                "file": "fonts/big_noodle_titling.ttf",
-                "name": "BIG_NOODLE_15",
-                "type": "font"
-            },
-            {
-                "characterRegex": "[0-9:.amp ]",
-                "file": "fonts/big_noodle_titling.ttf",
-                "name": "BIG_NOODLE_69",
-                "type": "font"
+                "file": "images/CleanSmart-Mini_Icon_BW.png",
+                "menuIcon": true,
+                "name": "MENU",
+                "type": "png"
             },
             {
                 "file": "fonts/big_noodle_titling.ttf",
-                "name": "BIG_NOODLE_30",
+                "name": "BIG_NOODLE_19",
+                "type": "font"
+            },
+            {
+                "file": "fonts/big_noodle_titling.ttf",
+                "name": "BIG_NOODLE_16",
+                "type": "font"
+            },
+            {
+                "file": "fonts/big_noodle_titling.ttf",
+                "name": "BIG_NOODLE_20",
                 "type": "font"
             },
             {
@@ -43,29 +49,18 @@
             },
             {
                 "file": "fonts/big_noodle_titling.ttf",
-                "name": "BIG_NOODLE_20",
+                "name": "BIG_NOODLE_30",
                 "type": "font"
             },
             {
                 "characterRegex": "[0-9:.amp ]",
                 "file": "fonts/big_noodle_titling.ttf",
-                "name": "BIG_NOODLE_65",
+                "name": "BIG_NOODLE_69",
                 "type": "font"
-            },
-            {
-                "file": "images/icon_bw.png",
-                "menuIcon": true,
-                "name": "MENU",
-                "type": "png"
             },
             {
                 "file": "images/meteocons_Yahoo_Order_V2.png",
                 "name": "METEOICONS",
-                "targetPlatforms": [
-                    "aplite",
-                    "basalt",
-                    "chalk"
-                ],
                 "type": "png"
             }
         ]
@@ -78,7 +73,7 @@
         "chalk"
     ],
     "uuid": "4d4935d2-a1bb-407e-bb71-d4ed5cae4861",
-    "versionLabel": "2.01",
+    "versionLabel": "2.04",
     "watchapp": {
         "watchface": true
     }

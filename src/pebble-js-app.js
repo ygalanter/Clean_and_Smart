@@ -1,4 +1,4 @@
-var version = '2.01';
+var version = '2.04';
 var current_settings;
 
 /*  ****************************************** Weather Section **************************************************** */
@@ -107,7 +107,8 @@ Pebble.addEventListener('ready',
              invertColors: 0,
              bluetoothBuzz: 0,
              locationService: 0,
-             woeid: 0
+             woeid: 0,
+             language: 255
          };
      }
     
@@ -178,6 +179,7 @@ Pebble.addEventListener("webviewclosed",
       app_message_json.KEY_BLUETOOTH_BUZZ = settings.bluetoothBuzz;
       app_message_json.KEY_LOCATION_SERVICE = settings.locationService;
       app_message_json.KEY_WEATHER_INTERVAL = settings.weatherInterval;
+      app_message_json.KEY_LANGUAGE = settings.language;
      
       // only storing and passing to pebble temperature format if it changed, because it will cause Pebble to reissue weather AJAX
       if (current_settings.temperatureFormat != settings.temperatureFormat) {
