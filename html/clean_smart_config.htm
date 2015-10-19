@@ -13,8 +13,9 @@
             display:none; 
             background-color:white !important; 
             position:absolute !important; 
-            top:100px; 
-            height:250px; 
+            top:0;
+            left:0;
+            height:100%; 
             width:100%;
             border:solid 1px darkgray;
             z-index:1000;
@@ -70,9 +71,9 @@
                     <div class="item-container-content">
                         <label class="item">
                             <div class="item-input-wrapper item-input-wrapper-button">
-                                <input type="text" id="xtxtWOEID" class="item-input" placeholder="Enter WOEID">
+                                <input type="text" id="xtxtWOEID" class="item-input" placeholder="Enter WOEID" style="color:black">
                             </div>
-                            <input type="button" class=" item-button item-input-button" value="LOOKUP" id="xbtnWOEID" onclick="$('#results').children().remove();$('#xtxtAddress').val('');$('#xDivWOIDlookup').show();">
+                            <input type="button" class=" item-button item-input-button" value="LOOKUP" id="xbtnWOEID">
                         </label>
                     </div>
                 </div>
@@ -80,14 +81,14 @@
             </label>
 
             <div class="item-container popup" id="xDivWOIDlookup">
-                <div class="item-container-header">Enter location (city/state/country/postal code)</div>
+                <div class="item-container-header">Location (city/state/country/postal)</div>
                 <div class="item-container-content">
                     <label class="item">
                         <div class="item-input-wrapper item-input-wrapper-button">
-                            <input type="text" id="xtxtAddress" class="item-input" placeholder="City/state/country/postal code">
+                            <input type="text" id="xtxtAddress" class="item-input" placeholder="City/state/country/postal code" style="color:black">
                         </div>
-                        <input type="button" class=" item-button item-input-button" value="LOOKUP" id="xbtnWOEIDlookup">
-                        <div id="results" style="font-size:12px"></div>
+                        <input type="button" class=" item-button item-input-button" value="SEARCH" id="xbtnWOEIDlookup">
+                        <div id="results" style="font-size:12px; color:black"></div>
                         <input type="button" class=" item-button" value="Close" id="xbtnWOEIDlookup" style="width:70px; margin-top:10px" onclick="$('#xDivWOIDlookup').hide();">
                     </label>
                 </div>
@@ -101,6 +102,19 @@
                     <option id="opt60" value="60" class="item-select-option">Every hour</option>
                 </select>
             </label>
+
+            <label class="item" style="display:none" id="xDivLanguage">
+                Language
+                <select id="language" class="item-select">
+                    <option id="default" value="255" class="item-select-option">Default</option>
+                    <option id="italian" value="1" class="item-select-option">Italiano</option>
+                    <option id="dutch" value="3" class="item-select-option" style="display:none">Nederlandse</option>
+                    <option id="norvegian" value="4" class="item-select-option" style="display:none">Norsk</option>
+                    <option id="swedish" value="0" class="item-select-option" >Svenska</option>
+                    <option id="russian" value="2" class="item-select-option" style="display:none">Русский</option>
+                </select>
+            </label>
+
 
 
             <label class="item">
@@ -162,8 +176,10 @@
             if (getURLVariable('version') >= '1.02') $('#xDivLocationSelection').show(); // showing location only for this version and above
             if (getURLVariable('version') >= '1.03') $('#optYMD').show(); // show this format only for this version & above
             if (getURLVariable('version') >= '1.04') $('#xDivWeatherInterval').show(); // show weather update interval only for this version & above
-
-
+            if (getURLVariable('version') >= '2.04') $('#xDivLanguage').show(); // show language selection only for this version & above
+            if (getURLVariable('version') >= '2.05') { // show these languages only for this version & above
+                $('#russian').show(); $('#dutch').show(); $('#norvegian').show();
+            }
 
             // loading settings
             try {
@@ -182,7 +198,8 @@
                     bluetoothBuzz: 0,
                     locationService: 0,
                     woeid: 0,
-                    weatherInterval: 60
+                    weatherInterval: 60,
+                    language: 255
                 };
             }
 
@@ -206,7 +223,7 @@
             }
 
             $('#weatherInterval').val(settings.weatherInterval ? settings.weatherInterval : 60); // reading update interval and if not set - make it an hour
-            
+            $('#language').val(settings.language || settings.language == 0 ? settings.language : 255);
 
             //assigning save button
 
@@ -269,6 +286,14 @@
                 }
             })
 
+
+            //showing WHOEID lookup screen
+            $('#xbtnWOEID').click(function (e) {
+                $('#results').children().remove();
+                $('#xtxtAddress').val('');
+                $('#xDivWOIDlookup').show();
+                window.scrollTo(0, 0);
+            })
 
             //WOEID lookup
             $('#xbtnWOEIDlookup').click(function (e) {
