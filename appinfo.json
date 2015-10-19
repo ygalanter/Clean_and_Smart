@@ -22,46 +22,46 @@
     "resources": {
         "media": [
             {
+                "file": "images/meteocons_Yahoo_Order_V2.png",
+                "name": "METEOICONS",
+                "type": "png"
+            },
+            {
                 "file": "images/CleanSmart-Mini_Icon_BW.png",
                 "menuIcon": true,
                 "name": "MENU",
                 "type": "png"
             },
             {
-                "file": "fonts/big_noodle_titling.ttf",
-                "name": "BIG_NOODLE_19",
-                "type": "font"
-            },
-            {
-                "file": "fonts/big_noodle_titling.ttf",
-                "name": "BIG_NOODLE_16",
-                "type": "font"
-            },
-            {
-                "file": "fonts/big_noodle_titling.ttf",
-                "name": "BIG_NOODLE_20",
-                "type": "font"
-            },
-            {
-                "file": "fonts/big_noodle_titling.ttf",
-                "name": "BIG_NOODLE_26",
-                "type": "font"
-            },
-            {
-                "file": "fonts/big_noodle_titling.ttf",
-                "name": "BIG_NOODLE_30",
-                "type": "font"
-            },
-            {
                 "characterRegex": "[0-9:.amp ]",
-                "file": "fonts/big_noodle_titling.ttf",
+                "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
                 "name": "BIG_NOODLE_69",
                 "type": "font"
             },
             {
-                "file": "images/meteocons_Yahoo_Order_V2.png",
-                "name": "METEOICONS",
-                "type": "png"
+                "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
+                "name": "BIG_NOODLE_30",
+                "type": "font"
+            },
+            {
+                "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
+                "name": "BIG_NOODLE_26",
+                "type": "font"
+            },
+            {
+                "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
+                "name": "BIG_NOODLE_20",
+                "type": "font"
+            },
+            {
+                "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
+                "name": "BIG_NOODLE_16",
+                "type": "font"
+            },
+            {
+                "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
+                "name": "BIG_NOODLE_19",
+                "type": "font"
             }
         ]
     },
@@ -73,7 +73,7 @@
         "chalk"
     ],
     "uuid": "4d4935d2-a1bb-407e-bb71-d4ed5cae4861",
-    "versionLabel": "2.04",
+    "versionLabel": "2.05",
     "watchapp": {
         "watchface": true
     }

@@ -134,18 +134,26 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
      
      switch(flag_dateFormat){
        case 0:
-         strftime(s_date, sizeof(s_date), "%b-%d-%Y", tick_time); // "DEC 10 2015"
-        
-         if (flag_language != LANG_DEFAULT) { // if custom language is set - pull from language array
-           strncpy(&s_date[0], LANG_MONTH[flag_language][tick_time->tm_mon], 3);
+         if (flag_language == LANG_RUSSIAN) { // if this is Russian - need double bytes
+           strftime(s_date, sizeof(s_date), "%b   -%d-%Y", tick_time); // "DEC 10 2015"
+           strncpy(&s_date[0], LANG_MONTH[flag_language][tick_time->tm_mon], 6);
+         }  else {
+           strftime(s_date, sizeof(s_date), "%b-%d-%Y", tick_time); // "DEC 10 2015"
+           if (flag_language != LANG_DEFAULT) { // if custom language is set - pull from language array
+             strncpy(&s_date[0], LANG_MONTH[flag_language][tick_time->tm_mon], 3);
+           }  
          }  
        
          break;
        case 1:
-         strftime(s_date, sizeof(s_date), "%d-%b-%Y", tick_time); // "10 DEC 2015"
-       
-         if (flag_language != LANG_DEFAULT) { // if custom language is set - pull from language array
-           strncpy(&s_date[3], LANG_MONTH[flag_language][tick_time->tm_mon], 3); 
+         if (flag_language == LANG_RUSSIAN) { // if this is Russian - need double bytes
+           strftime(s_date, sizeof(s_date), "%d-%b   -%Y", tick_time); // "DEC 10 2015"
+           strncpy(&s_date[3], LANG_MONTH[flag_language][tick_time->tm_mon], 6);
+         }  else {
+           strftime(s_date, sizeof(s_date), "%d-%b-%Y", tick_time); // "DEC 10 2015"
+           if (flag_language != LANG_DEFAULT) { // if custom language is set - pull from language array
+             strncpy(&s_date[3], LANG_MONTH[flag_language][tick_time->tm_mon], 3);
+           }  
          }  
        
          break;
@@ -164,6 +172,7 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
          text_layer_set_text(text_dow, s_dow);
      }
      
+           
    }
   
 }
