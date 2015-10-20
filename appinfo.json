@@ -33,24 +33,8 @@
                 "type": "png"
             },
             {
-                "characterRegex": "[0-9:.amp ]",
                 "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
-                "name": "BIG_NOODLE_69",
-                "type": "font"
-            },
-            {
-                "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
-                "name": "BIG_NOODLE_30",
-                "type": "font"
-            },
-            {
-                "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
-                "name": "BIG_NOODLE_26",
-                "type": "font"
-            },
-            {
-                "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
-                "name": "BIG_NOODLE_20",
+                "name": "BIG_NOODLE_19",
                 "type": "font"
             },
             {
@@ -60,7 +44,23 @@
             },
             {
                 "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
-                "name": "BIG_NOODLE_19",
+                "name": "BIG_NOODLE_20",
+                "type": "font"
+            },
+            {
+                "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
+                "name": "BIG_NOODLE_26",
+                "type": "font"
+            },
+            {
+                "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
+                "name": "BIG_NOODLE_30",
+                "type": "font"
+            },
+            {
+                "characterRegex": "[0-9:.amp ]",
+                "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
+                "name": "BIG_NOODLE_69",
                 "type": "font"
             }
         ]
@@ -73,7 +73,7 @@
         "chalk"
     ],
     "uuid": "4d4935d2-a1bb-407e-bb71-d4ed5cae4861",
-    "versionLabel": "2.05",
+    "versionLabel": "2.06",
     "watchapp": {
         "watchface": true
     }
