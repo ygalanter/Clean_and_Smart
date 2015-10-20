@@ -107,7 +107,9 @@
                 Language
                 <select id="language" class="item-select">
                     <option id="default" value="255" class="item-select-option">Default</option>
+                    <option id="catalan" value="5" class="item-select-option" style="display:none">Català</option>
                     <option id="italian" value="1" class="item-select-option">Italiano</option>
+                    <option id="malay" value="6" class="item-select-option" style="display:none">Melayu</option>
                     <option id="dutch" value="3" class="item-select-option" style="display:none">Nederlandse</option>
                     <option id="norvegian" value="4" class="item-select-option" style="display:none">Norsk</option>
                     <option id="swedish" value="0" class="item-select-option" >Svenska</option>
@@ -179,6 +181,9 @@
             if (getURLVariable('version') >= '2.04') $('#xDivLanguage').show(); // show language selection only for this version & above
             if (getURLVariable('version') >= '2.05') { // show these languages only for this version & above
                 $('#russian').show(); $('#dutch').show(); $('#norvegian').show();
+            }
+            if (getURLVariable('version') >= '2.06') { // show these languages only for this version & above
+                $('#catalan').show(); $('#malay').show();
             }
 
             // loading settings
