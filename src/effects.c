@@ -293,6 +293,8 @@ void effect_invert_bw_only(GContext* ctx,  GRect position, void* param) {
         #endif
      }
   }
+  
+ // APP_LOG(APP_LOG_LEVEL_DEBUG, "Max Y = %d", position.size.h);
  
   graphics_release_frame_buffer(ctx, fb);          
           

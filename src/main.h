@@ -16,6 +16,11 @@
 #define KEY_LOCATION_AUTOMATIC  0  
 #define KEY_LOCATION_MANUAL  1
 #define KEY_LOCATION_DISABLED  2
-  
-#define ICON_WIDTH  40
-#define ICON_HEIGHT 20
+
+#ifdef PBL_RECT
+  #define ICON_WIDTH  40
+  #define ICON_HEIGHT 20
+#else  
+  #define ICON_WIDTH  36
+  #define ICON_HEIGHT 18
+#endif

@@ -22,29 +22,26 @@
     "resources": {
         "media": [
             {
-                "file": "images/meteocons_Yahoo_Order_V2.png",
-                "name": "METEOICONS",
-                "type": "png"
-            },
-            {
-                "file": "images/CleanSmart-Mini_Icon_BW.png",
+                "file": "images/icon_aplite.png",
                 "menuIcon": true,
                 "name": "MENU",
-                "type": "png"
+                "targetPlatforms": null,
+                "type": "bitmap"
             },
             {
+                "file": "images/meteocons_Yahoo_Order_V2.png",
+                "name": "METEOICONS",
+                "type": "bitmap"
+            },
+            {
+                "characterRegex": "[0-9:.amp ]",
                 "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
-                "name": "BIG_NOODLE_19",
+                "name": "BIG_NOODLE_69",
                 "type": "font"
             },
             {
                 "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
-                "name": "BIG_NOODLE_16",
-                "type": "font"
-            },
-            {
-                "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
-                "name": "BIG_NOODLE_20",
+                "name": "BIG_NOODLE_30",
                 "type": "font"
             },
             {
@@ -54,13 +51,17 @@
             },
             {
                 "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
-                "name": "BIG_NOODLE_30",
+                "name": "BIG_NOODLE_20",
                 "type": "font"
             },
             {
-                "characterRegex": "[0-9:.amp ]",
                 "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
-                "name": "BIG_NOODLE_69",
+                "name": "BIG_NOODLE_16",
+                "type": "font"
+            },
+            {
+                "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
+                "name": "BIG_NOODLE_19",
                 "type": "font"
             }
         ]
@@ -73,7 +74,7 @@
         "chalk"
     ],
     "uuid": "4d4935d2-a1bb-407e-bb71-d4ed5cae4861",
-    "versionLabel": "2.06",
+    "versionLabel": "2.15",
     "watchapp": {
         "watchface": true
     }

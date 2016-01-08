@@ -26,6 +26,41 @@ GRect bounds;
 GPoint center;
 
 
+static void invert_colors() {
+  if (flag_invertColors == 1) {
+     effect_layer = effect_layer_create(bounds);
+     effect_layer_add_effect(effect_layer, effect_invert_bw_only, NULL);
+     layer_add_child(window_layer, effect_layer_get_layer(effect_layer));
+  } else {
+     effect_layer_destroy(effect_layer);
+  }
+  
+}
+
+
+
+// {*********************** THIS BLOCK PROPERLU RESTORES EFFECT LAYER AFTER A NOTIFICATION IS DISMISSED
+  
+// when app got focus - restore and refresh window - that makes it dynamic again
+static void app_focus_changed(bool focused) {
+  if (focused && effect_layer) {
+     layer_set_hidden(window_layer, false);  
+     layer_mark_dirty(window_layer);
+  }
+  
+}
+
+// when app is about to regain focus - hide main window - this restores static pic of previous screen appear
+static void app_focus_changing(bool focused) {
+  if (focused && effect_layer) {
+     layer_set_hidden(window_layer, true);  
+  }
+  
+}
+// *********************** }
+
+
+
 static void toggle_weather_visibility() {
   
   if (flag_locationService == 2) { // if weather disabled - hide it and move battery to center
@@ -50,16 +85,6 @@ static void toggle_weather_visibility() {
 }
 
 
-static void invert_colors() {
-  if (flag_invertColors == 1) {
-     effect_layer = effect_layer_create(bounds);
-     effect_layer_add_effect(effect_layer, effect_invert_bw_only, NULL);
-     layer_add_child(window_layer, effect_layer_get_layer(effect_layer));
-  } else {
-     effect_layer_destroy(effect_layer);
-  }
-  
-}
 
 //calling for weather update
 static void update_weather() {
@@ -258,7 +283,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
            need_weather = 1;
            // APP_LOG(APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' Weather interval set to interval to %d min", flag_weatherInterval);
          }
-         break;
+      break;
       case KEY_LANGUAGE:
         if (t->value->int32 !=flag_language) {
           persist_write_int(KEY_LANGUAGE, t->value->int32);
@@ -422,17 +447,19 @@ static void battery_handler(BatteryChargeState state) {
 
 void handle_init(void) {
   
+  // need to catch when app resumes focus after notification, otherwise effect layer won't restore
+  app_focus_service_subscribe_handlers((AppFocusHandlers){
+    .did_focus = app_focus_changed,
+    .will_focus = app_focus_changing
+  });
+  
   //going international
   setlocale(LC_ALL, "");
   
   my_window = window_create();
   window_set_background_color(my_window, GColorBlack);
   window_stack_push(my_window, true);
-  
-  #ifdef PBL_PLATFORM_APLITE
-    window_set_fullscreen(my_window, true);
-  #endif  
-  
+ 
   window_layer = window_get_root_layer(my_window);  
   bounds = layer_get_bounds(window_layer);
   center = grect_center_point(&bounds);
@@ -478,10 +505,10 @@ void handle_init(void) {
   app_message_register_outbox_sent(outbox_sent_callback);
 
   // Open AppMessage
-  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum()); 
+  app_message_open(500, 500); 
   
   
-   // reading stored value
+  // reading stored value
   if (persist_exists(KEY_WEATHER_CODE)) show_icon(persist_read_int(KEY_WEATHER_CODE));
   if (persist_exists(KEY_WEATHER_TEMP))
     show_temperature(persist_read_int(KEY_WEATHER_TEMP));
@@ -542,7 +569,7 @@ void handle_deinit(void) {
   tick_timer_service_unsubscribe();
   battery_state_service_unsubscribe();
   bluetooth_connection_service_unsubscribe();
-  
+  app_focus_service_unsubscribe();
 }
   
 
