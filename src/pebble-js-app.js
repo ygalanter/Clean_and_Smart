@@ -1,4 +1,4 @@
-var version = '2.16';
+var version = '2.17';
 var current_settings;
 
 /*  ****************************************** Weather Section **************************************************** */
@@ -60,7 +60,7 @@ function locationSuccess(pos) {
 /* YG 2016-01-25  !!! This query no longer works due to Yahoo bug. Using the one below it !!!  */  
 // var query = 'select * from geo.placefinder where text="' +
 //     pos.coords.latitude + ',' + pos.coords.longitude + '" and gflags="R"';
-   var query = 'select woeid from geo.places where text="(' + 
+   var query = 'select locality1 from geo.places where text="(' + 
        pos.coords.latitude + ',' + pos.coords.longitude + ')" limit 1';
   
   //console.log ("++++ I am inside of 'locationSuccess()' preparing query:" + query);
@@ -73,7 +73,7 @@ function locationSuccess(pos) {
     
     /* YG 2016-01-25  !!! This result no longer works due to Yahoo bug. Using the one below it !!!  */  
     // woeid = json.query.results.Result.woeid;
-    woeid = json.query.results.place.woeid;
+    woeid = json.query.results.place.locality1.woeid;
     
     //console.log ("++++ I am inside of 'locationSuccess()', woeid received:" + woeid);
     getWeather(woeid);
