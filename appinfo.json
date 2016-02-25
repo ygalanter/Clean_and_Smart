@@ -17,6 +17,7 @@
         "configurable"
     ],
     "companyName": "yuri@galanter.net",
+    "enableMultiJS": false,
     "longName": "Clean&Smart",
     "projectType": "native",
     "resources": {
