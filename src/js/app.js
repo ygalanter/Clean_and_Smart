@@ -1,4 +1,4 @@
-var version = '2.17';
+var version = '2.18';
 var current_settings;
 
 /*  ****************************************** Weather Section **************************************************** */
@@ -118,7 +118,7 @@ Pebble.addEventListener('ready',
              hoursMinutesSeparator: 0,
              dateFormat: 0,
              invertColors: 0,
-             bluetoothBuzz: 0,
+             bluetoothAlert: 0, // new 2.18
              locationService: 0,
              woeid: 0,
              language: 255
@@ -180,16 +180,13 @@ Pebble.addEventListener("webviewclosed",
       //Get JSON dictionary
       var settings = JSON.parse(decodeURIComponent(e.response));
    
-      
-      
-      //Send to Pebble
       var app_message_json = {};
 
       // preparing app message
       app_message_json.KEY_HOURS_MINUTES_SEPARATOR = settings.hoursMinutesSeparator;
       app_message_json.KEY_DATE_FORMAT = settings.dateFormat;
       app_message_json.KEY_INVERT_COLORS = settings.invertColors;
-      app_message_json.KEY_BLUETOOTH_BUZZ = settings.bluetoothBuzz;
+      app_message_json.KEY_BLUETOOTH_ALERT = settings.bluetoothAlert; // new 2.18
       app_message_json.KEY_LOCATION_SERVICE = settings.locationService;
       app_message_json.KEY_WEATHER_INTERVAL = settings.weatherInterval;
       app_message_json.KEY_LANGUAGE = settings.language;

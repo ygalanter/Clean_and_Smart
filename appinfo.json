@@ -1,6 +1,6 @@
 {
     "appKeys": {
-        "KEY_BLUETOOTH_BUZZ": 7,
+        "KEY_BLUETOOTH_ALERT": 7,
         "KEY_DATE_FORMAT": 5,
         "KEY_HOURS_MINUTES_SEPARATOR": 4,
         "KEY_INVERT_COLORS": 6,
@@ -17,7 +17,7 @@
         "configurable"
     ],
     "companyName": "yuri@galanter.net",
-    "enableMultiJS": false,
+    "enableMultiJS": true,
     "longName": "Clean&Smart",
     "projectType": "native",
     "resources": {
@@ -75,7 +75,7 @@
         "chalk"
     ],
     "uuid": "4d4935d2-a1bb-407e-bb71-d4ed5cae4861",
-    "versionLabel": "2.17",
+    "versionLabel": "2.18",
     "watchapp": {
         "watchface": true
     }

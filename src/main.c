@@ -19,7 +19,7 @@ char s_temp[] = "-100°";
 
 EffectLayer *effect_layer;
 
-uint8_t flag_hoursMinutesSeparator, flag_dateFormat, flag_invertColors, flag_bluetoothBuzz, flag_locationService, flag_weatherInterval, flag_language;
+uint8_t flag_hoursMinutesSeparator, flag_dateFormat, flag_invertColors, flag_bluetooth_alert, flag_locationService, flag_weatherInterval, flag_language;
 bool flag_messaging_is_busy = false, flag_js_is_ready = false;
 
 GRect bounds;
@@ -254,12 +254,13 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
           need_time = 1;
         }  
         break;
-      case KEY_BLUETOOTH_BUZZ:
-        if (t->value->int32 !=flag_bluetoothBuzz) {
-          persist_write_int(KEY_BLUETOOTH_BUZZ, t->value->int32);
-          flag_bluetoothBuzz = t->value->int32;
-        }  
-        break;
+     case KEY_BLUETOOTH_ALERT:
+           if (flag_bluetooth_alert != t->value->uint8){
+             persist_write_int(KEY_BLUETOOTH_ALERT, t->value->uint8);
+             flag_bluetooth_alert = t->value->uint8;
+             layer_mark_dirty(graphics_layer);
+           }  
+           break;
       case KEY_INVERT_COLORS:
         if (t->value->int32 != flag_invertColors) {
           persist_write_int(KEY_INVERT_COLORS, t->value->int32);
@@ -343,12 +344,30 @@ TextLayer* create_text_layer(GRect coords, int font, GTextAlignment align) {
 
 static void bluetooth_handler(bool state) {
   
-  if (flag_bluetoothBuzz == 1) vibes_short_pulse();
   
   if (state){
     // APP_LOG(APP_LOG_LEVEL_INFO, "***** I am inside of 'bluetooth_handler()' about to call 'update_weather();");
     update_weather();
   } 
+  
+  // if Bluetooth alert is totally disabled - exit from here
+  if (flag_bluetooth_alert == BLUETOOTH_ALERT_DISABLED) return;  
+  
+  switch (flag_bluetooth_alert){
+    case BLUETOOTH_ALERT_WEAK:
+      vibes_enqueue_custom_pattern(VIBE_PATTERN_WEAK);
+      break;
+    case BLUETOOTH_ALERT_NORMAL:
+      vibes_enqueue_custom_pattern(VIBE_PATTERN_NORMAL);
+      break;
+    case BLUETOOTH_ALERT_STRONG:
+    vibes_enqueue_custom_pattern(VIBE_PATTERN_STRONG);
+      break;
+    case BLUETOOTH_ALERT_DOUBLE:
+      vibes_enqueue_custom_pattern(VIBE_PATTERN_DOUBLE);
+      break;    
+  }
+  
     
   layer_mark_dirty(graphics_layer);
   
@@ -395,14 +414,14 @@ static void graphics_update_proc(Layer *layer, GContext *ctx) {
      graphics_draw_circle(ctx, center, 85);
    #endif
   
-  if (bluetooth_connection_service_peek()) {
+  if (flag_bluetooth_alert != BLUETOOTH_ALERT_DISABLED && bluetooth_connection_service_peek()) { // checkin bluetooth only if check is enabled
     #ifdef PBL_COLOR
       graphics_context_set_fill_color(ctx, GColorCyan);
     #else
       graphics_context_set_fill_color(ctx, GColorWhite);
     #endif
     
-    #ifdef PBL_RECT // on Aplite & Basalt draw think line
+    #ifdef PBL_RECT // on Aplite & Basalt draw thick line
       graphics_fill_rect(ctx, GRect(0,165,144,3), 0, GCornersAll);  
     #else // on Chalk draw think circle
       graphics_context_set_stroke_color(ctx, GColorCyan);
@@ -519,7 +538,7 @@ void handle_init(void) {
   flag_hoursMinutesSeparator = persist_exists(KEY_HOURS_MINUTES_SEPARATOR)? persist_read_int(KEY_HOURS_MINUTES_SEPARATOR) : 0;
   flag_dateFormat = persist_exists(KEY_DATE_FORMAT)? persist_read_int(KEY_DATE_FORMAT) : 0;
   flag_invertColors = persist_exists(KEY_INVERT_COLORS)? persist_read_int(KEY_INVERT_COLORS) : 0;
-  flag_bluetoothBuzz = persist_exists(KEY_BLUETOOTH_BUZZ)? persist_read_int(KEY_BLUETOOTH_BUZZ) : 0;
+  flag_bluetooth_alert = persist_exists(KEY_BLUETOOTH_ALERT)? persist_read_int(KEY_BLUETOOTH_ALERT) : 0;
   flag_locationService = persist_exists(KEY_LOCATION_SERVICE)? persist_read_int(KEY_LOCATION_SERVICE) : 0;
   flag_weatherInterval = persist_exists(KEY_WEATHER_INTERVAL)? persist_read_int(KEY_WEATHER_INTERVAL) : 60; // default weather update is 1 hour
   flag_language = persist_exists(KEY_LANGUAGE)? persist_read_int(KEY_LANGUAGE) : LANG_DEFAULT; // default - language set by pebble
@@ -529,10 +548,10 @@ void handle_init(void) {
   toggle_weather_visibility(); //initial check for enable/disable weather
   
   // initial bluetooth check
-  flag_bluetoothBuzz = 0;
+  flag_bluetooth_alert = 0;
   bluetooth_connection_service_subscribe(bluetooth_handler);
   bluetooth_handler(bluetooth_connection_service_peek());
-  flag_bluetoothBuzz = persist_exists(KEY_BLUETOOTH_BUZZ)? persist_read_int(KEY_BLUETOOTH_BUZZ) : 0;
+  flag_bluetooth_alert = persist_exists(KEY_BLUETOOTH_ALERT)? persist_read_int(KEY_BLUETOOTH_ALERT) : 1;
   
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
   
