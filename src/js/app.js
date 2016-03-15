@@ -1,4 +1,4 @@
-var version = '2.18';
+var version = '2.20';
 var current_settings;
 
 /*  ****************************************** Weather Section **************************************************** */
@@ -165,7 +165,9 @@ Pebble.addEventListener("showConfiguration",
   function(e) {
    
     //Load the remote config page
-    Pebble.openURL("http://codecorner.galanter.net/pebble/clean_smart_config.htm?version=" + version);
+   
+    //Pebble.openURL("http://codecorner.galanter.net/pebble/clean_smart_config.htm?version=" + version);
+    Pebble.openURL("http://ygalanter.github.io/configs/clean_smart/clean_smart_config.htm?version=" + version); //YG 2016-03-15; moved config to github hosting
     
   }
 );
