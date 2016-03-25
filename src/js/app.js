@@ -1,32 +1,89 @@
-var version = '2.20';
+var version = '2.21';
 var current_settings;
 
 /*  ****************************************** Weather Section **************************************************** */
 
-function getWeather(woeid) {  
+
+// converts forecast.io weather icon code to Yahoo weather icon code (to reuse current bitmap with icon set)
+  var ForecastIoIconToYahooIcon = function(forecsat_io_icon) {
+    var yahoo_icon = 3200; //initialy not defined
+    
+    switch (forecsat_io_icon){
+      case "clear-day":
+        yahoo_icon = 32; // sunny
+        break;
+      case "clear-night":
+        yahoo_icon = 31; // clear night
+        break;
+      case "rain":
+        yahoo_icon = 11; // showers
+        break;
+      case "snow":
+        yahoo_icon = 16; // snow
+        break;
+      case "sleet": 
+        yahoo_icon = 18; // sleet
+        break;
+      case "wind": 
+        yahoo_icon = 24; // windy
+        break;
+      case "fog": 
+        yahoo_icon = 20; // foggy
+        break;
+      case "cloudy":
+        yahoo_icon = 26; // cloudy
+        break;
+      case "partly-cloudy-day":
+        yahoo_icon = 30; // partly cloudy day
+        break;
+      case "partly-cloudy-night":
+        yahoo_icon = 29; // partly cloudy night
+        break;
+    }
+    
+    return yahoo_icon;
+    
+  };
+
+
+//2016-03-25: Updated for Forecast.io
+function getWeather(coords /*woeid*/ ) {  
+  
+      if (current_settings.forecastIoApiKey === '') {
+        //console.log ("\n++++ I am inside of 'getWeather()' API KEY NOT DEFINED");
+        return;
+      }
   
   var temperature;
   var icon;
   
   
-  var query = 'select item.condition from weather.forecast where woeid =  ' + woeid + ' and u="' + (current_settings.temperatureFormat === 0? 'f' : 'c') + '"';
+  //* var query = 'select item.condition from weather.forecast where woeid =  ' + woeid + ' and u="' + (current_settings.temperatureFormat === 0? 'f' : 'c') + '"';
   //console.log ("++++ I am inside of 'getWeather()' preparing query:" + query);
-  var url = 'https://query.yahooapis.com/v1/public/yql?q=' + encodeURIComponent(query) + '&format=json&env=store://datatables.org/alltableswithkeys';
+  
+  //* var url = 'https://query.yahooapis.com/v1/public/yql?q=' + encodeURIComponent(query) + '&format=json&env=store://datatables.org/alltableswithkeys';
+  var url = 'https://api.forecast.io/forecast/' + current_settings.forecastIoApiKey + '/' + coords + '?exclude=minutely,hourly,daily,alerts,flags&units=' + (current_settings.temperatureFormat === 0? 'us' : 'si');
   //console.log ("++++ I am inside of 'getWeather()' preparing url:" + url);
-  // Send request to Yahoo
+  
+  // ** Send request to Yahoo
+  //Send request to Forecast.io
   var xhr = new XMLHttpRequest();
   xhr.onload = function () {
+    
     //console.log  ("++++ I am inside of 'getWeather()' callback. responseText is " + this.responseText);
+    
     var json = JSON.parse(this.responseText);
-    temperature = parseInt(json.query.results.channel.item.condition.temp);
+    
+    
+    temperature = json.currently.temperature;
     //console.log  ("++++ I am inside of 'getWeather()' callback. Temperature is " + temperature);
     
-    icon = parseInt(json.query.results.channel.item.condition.code);
+    icon = json.currently.icon;
     //console.log  ("++++ I am inside of 'getWeather()' callback. Icon code: " + icon);
    
     
     var dictionary = {
-      'KEY_WEATHER_CODE': icon,
+      'KEY_WEATHER_CODE': ForecastIoIconToYahooIcon(icon),
       'KEY_WEATHER_TEMP': temperature
     };
     
@@ -54,32 +111,35 @@ function getWeather(woeid) {
 
 // on location success querying woeid and getting weather
 function locationSuccess(pos) {
-  // We neeed to get the Yahoo woeid first
-  var woeid;
-
-/* YG 2016-01-25  !!! This query no longer works due to Yahoo bug. Using the one below it !!!  */  
-// var query = 'select * from geo.placefinder where text="' +
-//     pos.coords.latitude + ',' + pos.coords.longitude + '" and gflags="R"';
-   var query = 'select locality1 from geo.places where text="(' + 
-       pos.coords.latitude + ',' + pos.coords.longitude + ')" limit 1';
+//         // We neeed to get the Yahoo woeid first
+//         var woeid;
+      
+//       /* YG 2016-01-25  !!! This query no longer works due to Yahoo bug. Using the one below it !!!  */  
+//       // var query = 'select * from geo.placefinder where text="' +
+//       //     pos.coords.latitude + ',' + pos.coords.longitude + '" and gflags="R"';
+//          var query = 'select locality1 from geo.places where text="(' + 
+//              pos.coords.latitude + ',' + pos.coords.longitude + ')" limit 1';
+        
+//         //console.log ("++++ I am inside of 'locationSuccess()' preparing query:" + query);
+//         var url = 'https://query.yahooapis.com/v1/public/yql?q=' + encodeURIComponent(query) + '&format=json';
+//         //console.log ("++++ I am inside of 'locationSuccess()' preparing URL: " + url);
+//         // Send request to Yahoo
+//         var xhr = new XMLHttpRequest();
+//         xhr.onload = function () {
+//           var json = JSON.parse(this.responseText);
+          
+//           /* YG 2016-01-25  !!! This result no longer works due to Yahoo bug. Using the one below it !!!  */  
+//           // woeid = json.query.results.Result.woeid;
+//           woeid = json.query.results.place.locality1.woeid;
+          
+//           //console.log ("++++ I am inside of 'locationSuccess()', woeid received:" + woeid);
+//           getWeather(woeid);
+//         };
+//         xhr.open('GET', url);
+//         xhr.send();
   
-  //console.log ("++++ I am inside of 'locationSuccess()' preparing query:" + query);
-  var url = 'https://query.yahooapis.com/v1/public/yql?q=' + encodeURIComponent(query) + '&format=json';
-  //console.log ("++++ I am inside of 'locationSuccess()' preparing URL: " + url);
-  // Send request to Yahoo
-  var xhr = new XMLHttpRequest();
-  xhr.onload = function () {
-    var json = JSON.parse(this.responseText);
-    
-    /* YG 2016-01-25  !!! This result no longer works due to Yahoo bug. Using the one below it !!!  */  
-    // woeid = json.query.results.Result.woeid;
-    woeid = json.query.results.place.locality1.woeid;
-    
-    //console.log ("++++ I am inside of 'locationSuccess()', woeid received:" + woeid);
-    getWeather(woeid);
-  };
-  xhr.open('GET', url);
-  xhr.send();
+   // requestion weather from forecast.io
+   getWeather(pos.coords.latitude + ',' + pos.coords.longitude);
 
 }
 
@@ -121,7 +181,8 @@ Pebble.addEventListener('ready',
              bluetoothAlert: 0, // new 2.18
              locationService: 0,
              woeid: 0,
-             language: 255
+             language: 255,
+             forecastIoApiKey: ''
          };
      }
     
@@ -149,8 +210,9 @@ Pebble.addEventListener('appmessage',
     //console.log ("++++ I am inside of 'Pebble.addEventListener('appmessage'): AppMessage received");
     
     if (current_settings.locationService == 1) { // for manual location - request weather right away
-        //console.log ("++++ I am inside of 'Pebble.addEventListener('appmessage'): Requesting weather by WOEID");
-        getWeather(current_settings.woeid);
+      // for now manual location is disabled: forecast.io uses automatic
+      //  //console.log ("++++ I am inside of 'Pebble.addEventListener('appmessage'): Requesting weather by WOEID");
+      //  *** getWeather(current_settings.woeid);
     } else {
        //console.log ("++++ I am inside of 'Pebble.addEventListener('appmessage'): Requesting automatic location");
        getLocation();  // for automatic location - get location
@@ -194,7 +256,9 @@ Pebble.addEventListener("webviewclosed",
       app_message_json.KEY_LANGUAGE = settings.language;
      
       // only storing and passing to pebble temperature format if it changed, because it will cause Pebble to reissue weather AJAX
-      if (current_settings.temperatureFormat != settings.temperatureFormat) {
+      // (or if forecast.io API Key was set/changed - then we need to update weather as well)
+      if (current_settings.temperatureFormat != settings.temperatureFormat ||
+          current_settings.forecastIoApiKey != settings.forecastIoApiKey) {
         app_message_json.KEY_TEMPERATURE_FORMAT = settings.temperatureFormat;
       }
       
