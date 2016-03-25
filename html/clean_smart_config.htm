@@ -34,27 +34,51 @@
         <div class="item-container-content">
 
             <label class="item">
-                Display Temperature in
-                <select id="temperatureFormat" class="item-select">
-                    <option id="optF" value="0" class="item-select-option">Fahrenheit</option>
-                    <option id="optC" value="1" class="item-select-option">Celsius</option>
-                </select>
-            </label>
-
-            <label class="item">
                 Hours and Minutes Separator
                 <select id="hoursMinutesSeparator" class="item-select">
                     <option id="optColon" value="0" class="item-select-option">Colon :</option>
                     <option id="optDot" value="1" class="item-select-option">Dot .</option>
                 </select>
             </label>
-
             <label class="item">
                 Date format
                 <select id="dateFormat" class="item-select">
                     <option id="optMDY" value="0" class="item-select-option">Month Day Year</option>
                     <option id="optDMY" value="1" class="item-select-option">Day Month Year</option>
                     <option id="optYMD" value="2" class="item-select-option" style="display:none">YYYY-MM-DD</option>
+                </select>
+            </label>
+            <label class="item" style="display:none" id="xDivLanguage">
+                Language
+                <select id="language" class="item-select">
+                    <option id="default" value="255" class="item-select-option">Default</option>
+                    <option id="catalan" value="5" class="item-select-option" style="display:none">Català</option>
+                    <option id="italian" value="1" class="item-select-option">Italiano</option>
+                    <option id="malay" value="6" class="item-select-option" style="display:none">Melayu</option>
+                    <option id="dutch" value="3" class="item-select-option" style="display:none">Nederlandse</option>
+                    <option id="norvegian" value="4" class="item-select-option" style="display:none">Norsk</option>
+                    <option id="swedish" value="0" class="item-select-option">Svenska</option>
+                    <option id="russian" value="2" class="item-select-option" style="display:none">Русский</option>
+                </select>
+            </label>
+
+            <hr />
+
+            <label class="item" id="lblForecastIoApiKey" style="display:none">
+                Forecast.io API Key
+                <div class="item-input-wrapper item-input-wrapper-button">
+                    <input type="text" id="xtxtForecastIoApiKey" class="item-input" placeholder="API KEY" style="color:black">
+                </div>
+                <div style="font-size:small;">
+                    Register at https://developer.forecast.io to receive API Key. This is a one time procedure, no billing information required there.
+                 </div>
+            </label>
+
+            <label class="item">
+                Display Temperature in
+                <select id="temperatureFormat" class="item-select">
+                    <option id="optF" value="0" class="item-select-option">Fahrenheit</option>
+                    <option id="optC" value="1" class="item-select-option">Celsius</option>
                 </select>
             </label>
 
@@ -102,31 +126,29 @@
                     <option id="opt60" value="60" class="item-select-option">Every hour</option>
                 </select>
             </label>
-
-            <label class="item" style="display:none" id="xDivLanguage">
-                Language
-                <select id="language" class="item-select">
-                    <option id="default" value="255" class="item-select-option">Default</option>
-                    <option id="catalan" value="5" class="item-select-option" style="display:none">Català</option>
-                    <option id="italian" value="1" class="item-select-option">Italiano</option>
-                    <option id="malay" value="6" class="item-select-option" style="display:none">Melayu</option>
-                    <option id="dutch" value="3" class="item-select-option" style="display:none">Nederlandse</option>
-                    <option id="norvegian" value="4" class="item-select-option" style="display:none">Norsk</option>
-                    <option id="swedish" value="0" class="item-select-option" >Svenska</option>
-                    <option id="russian" value="2" class="item-select-option" style="display:none">Русский</option>
-                </select>
-            </label>
-
-
-
+            <hr />
             <label class="item">
                 Invert colors
                 <input type="checkbox" class="item-checkbox" name="invertColors" id="invertColors">
             </label>
 
-            <label class="item">
+            <hr />
+
+            <label class="item" id="bt217">
                 Buzz on BT connect/disconnect
                 <input type="checkbox" class="item-checkbox" name="bluetoothBuzz" id="bluetoothBuzz">
+            </label>
+
+            <label class="item" id="bt218" style="display:none">
+                Bluetooth Alert
+                <select id="bluetoothAlert" class="item-select">
+                    <option value="0" class="item-select-option">Disabled</option>
+                    <option value="1" class="item-select-option">Silent</option>
+                    <option value="2" class="item-select-option" selected="selected">Weak</option>
+                    <option value="3" class="item-select-option">Normal</option>
+                    <option value="4" class="item-select-option">Strong</option>
+                    <option value="5" class="item-select-option">Double</option>
+                </select>
             </label>
 
 
@@ -162,6 +184,13 @@
 
     <script>
 
+        var BLUETOOTH_ALERT_DISABLED = 0;
+        var BLUETOOTH_ALERT_SILENT = 1;
+        var BLUETOOTH_ALERT_WEAK = 2;
+        var BLUETOOTH_ALERT_NORMAL = 3;
+        var BLUETOOTH_ALERT_STRONG = 4;
+        var BLUETOOTH_ALERT_DOUBLE = 5;
+
    
         // to get value of query string
         function getURLVariable(name) {
@@ -186,6 +215,11 @@
                 $('#catalan').show(); $('#malay').show();
             }
 
+            if (getURLVariable('version') >= '2.18') { //after version 2.18 use new bluetooth dropdown
+                $("#bt217").hide();
+                $("#bt218").show();
+            }
+
             // loading settings
             try {
                 settings = JSON.parse(localStorage.getItem("clean_smart_settings"));
@@ -200,23 +234,30 @@
                     hoursMinutesSeparator: 0,
                     dateFormat: 0,
                     invertColors: 0,
-                    bluetoothBuzz: 0,
+                    bluetoothBuzz: 0, // old checkbox 2.17
+                    bluetoothAlert: 0, // new dropdown 2.18
                     locationService: 0,
                     woeid: 0,
                     weatherInterval: 60,
-                    language: 255
+                    language: 255,
+                    forecastIoApiKey: ''
                 };
             }
 
             // setting checkboxes' values
             if (settings.invertColors == 1) $('#invertColors').attr('checked', 'checked');
-            if (settings.bluetoothBuzz == 1) $('#bluetoothBuzz').attr('checked', 'checked');
+            if (getURLVariable('version') < '2.18') {// old bluetooth checkbox
+                if (settings.bluetoothBuzz == 1) $('#bluetoothBuzz').attr('checked', 'checked');
+            }
           
 
             // setting dropdown values
             $('#temperatureFormat').val(settings.temperatureFormat);
             $('#hoursMinutesSeparator').val(settings.hoursMinutesSeparator);
             $('#dateFormat').val(settings.dateFormat);
+            if (getURLVariable('version') >= '2.18') {// new bluetooth dropdown
+                $('#bluetoothAlert').val(settings.bluetoothAlert != null ? settings.bluetoothAlert : BLUETOOTH_ALERT_WEAK);
+            }
 
             $('#locationService').val(settings.locationService? settings.locationService : 0); // reading location and if manual - setting WOEID as well
             if (settings.locationService == '1') {
@@ -230,6 +271,20 @@
             $('#weatherInterval').val(settings.weatherInterval ? settings.weatherInterval : 60); // reading update interval and if not set - make it an hour
             $('#language').val(settings.language || settings.language == 0 ? settings.language : 255);
 
+            //after version 2.21 switched to Forecast.IO weather and Nominatim geocoding
+            if (getURLVariable('version') >= '2.21') {
+
+                //disabling manual location
+                if ($('#locationService').val() == '1') $('#locationService').val('0');
+                $('#manual').hide();
+
+                //showing input box for Forecast IO API Key
+                $('#lblForecastIoApiKey').show();
+
+                //restoring saved API key
+                $('#xtxtForecastIoApiKey').val(settings.forecastIoApiKey? settings.forecastIoApiKey: '');
+            }
+
             //assigning save button
 
             $('#xbtnSave').click(function () {
@@ -242,6 +297,7 @@
                 }
 
                 settings.woeid = parseInt($('#xtxtWOEID').val());
+                settings.forecastIoApiKey = $('#xtxtForecastIoApiKey').val();
 
                 localStorage.setItem("clean_smart_settings", JSON.stringify(settings));
 
@@ -319,7 +375,7 @@
                             $('#results').append('<div onclick = "$(\'#xtxtWOEID\').val(' + result.woeid + ');$(\'#xDivWOIDlookup\').hide();">' + result.name + ', ' + result.admin1.content + ' (' + result.admin1.code + ') WOEID: <span style="font-weight:bold">' + result.woeid + '</span></div>');
                         }
                     }
-                })
+                })
 
 
             })
