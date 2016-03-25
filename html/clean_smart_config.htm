@@ -275,7 +275,10 @@
             if (getURLVariable('version') >= '2.21') {
 
                 //disabling manual location
-                if ($('#locationService').val() == '1') $('#locationService').val('0');
+                if ($('#locationService').val() == '1') {
+                    $('#locationService').val('0');
+                    $('#xDivWOID').hide();
+                }
                 $('#manual').hide();
 
                 //showing input box for Forecast IO API Key
