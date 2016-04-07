@@ -138,6 +138,7 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
    if (flag_hoursMinutesSeparator == 1) format[2] = '.';
   
    if (units_changed & MINUTE_UNIT) { // on minutes change - change time
+     
      strftime(s_time, sizeof(s_time), format, tick_time);
      
      if (s_time[0] == ' ') { // if in 12h mode we have leading space in time - don't display it (it will screw centering of text) start with next char
@@ -147,7 +148,7 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
      }
      
      
-     if (!(tick_time->tm_min % flag_weatherInterval)) { // on configured weather interval change - update the weather
+     if (!(tick_time->tm_min % flag_weatherInterval) && (tick_time->tm_sec == 0)) { // on configured weather interval change - update the weather
         // APP_LOG(APP_LOG_LEVEL_INFO, "**** I am inside 'tick_handler()' about to call 'update_weather();' at minute %d min on %d interval", tick_time->tm_min, flag_weatherInterval);
         update_weather();
      } 
@@ -383,9 +384,9 @@ static void graphics_update_proc(Layer *layer, GContext *ctx) {
    graphics_context_set_antialiased(ctx, flag_invertColors == 0); // if we're doing inversion - disable antialiasing
     
 // doing battery color in ranges with fall thru:
-//       100% - 50% - GColorJaegerGreen
-//       49% - 20% - GColorChromeYellow
-//       19% - 0% - GColorDarkCandyAppleRed
+//       100% - 50% - GColorGreen
+//       49% - 20% - GColorIcterine
+//       19% - 0% - GColorRed
 
     
      switch (battery_state_service_peek().charge_percent) {
@@ -394,13 +395,13 @@ static void graphics_update_proc(Layer *layer, GContext *ctx) {
        case 80: 
        case 70: 
        case 60: 
-       case 50: color = GColorJaegerGreen; break;
+       case 50: color = GColorGreen; break;
        case 40: 
        case 30: 
-       case 20: color = GColorChromeYellow; break;
+       case 20: color = GColorIcterine; break;
        case 10: 
-       case 0:  color = GColorDarkCandyAppleRed; break;     
-   }
+       case 0:  color = GColorRed; break;     
+     }
    #else
      color = GColorWhite;
    #endif
@@ -440,21 +441,21 @@ static void battery_handler(BatteryChargeState state) {
   #ifndef PBL_RECT
     static GColor color;  
     // doing battery color in ranges with fall thru:
-    //       100% - 50% - GColorJaegerGreen
-    //       49% - 20% - GColorChromeYellow
-    //       19% - 0% - GColorDarkCandyAppleRed
+    //       100% - 50% - GColorGreen
+    //       49% - 20% - GColorIcterine
+    //       19% - 0% - GColorRed
     switch (state.charge_percent) {
          case 100: 
          case 90: 
          case 80: 
          case 70: 
          case 60: 
-         case 50: color = GColorJaegerGreen; break;
+         case 50: color = GColorGreen; break;
          case 40: 
          case 30: 
-         case 20: color = GColorChromeYellow; break;
+         case 20: color = GColorIcterine; break;
          case 10: 
-         case 0:  color = GColorDarkCandyAppleRed; break;     
+         case 0:  color = GColorRed; break;     
      }
    
      text_layer_set_text_color(text_battery, color);
@@ -491,7 +492,7 @@ void handle_init(void) {
   #ifdef PBL_RECT
     temp_layer =  bitmap_layer_create(GRect(51, 1, 41, 20));
   #else
-    temp_layer =  bitmap_layer_create(GRect(86, 136, 41, 21));
+    temp_layer =  bitmap_layer_create(GRect(86, 137, 41, 21));
   #endif
   layer_add_child(window_layer, bitmap_layer_get_layer(temp_layer));
   
@@ -503,10 +504,10 @@ void handle_init(void) {
     text_temp = create_text_layer(GRect(3, 0, 80, 21), RESOURCE_ID_BIG_NOODLE_19, GTextAlignmentLeft);
   #else
     text_dow = create_text_layer(GRect(0,29,bounds.size.w,31), RESOURCE_ID_BIG_NOODLE_20, GTextAlignmentCenter);
-    text_time = create_text_layer(GRect(0,39,bounds.size.w,70), RESOURCE_ID_BIG_NOODLE_69, GTextAlignmentCenter);
-    text_date = create_text_layer(GRect(36,113,75,27), RESOURCE_ID_BIG_NOODLE_16, GTextAlignmentLeft);
-    text_battery = create_text_layer(GRect(105, 113, 40, 21), RESOURCE_ID_BIG_NOODLE_16, GTextAlignmentRight);
-    text_temp = create_text_layer(GRect(48, 137, 41, 20), RESOURCE_ID_BIG_NOODLE_16, GTextAlignmentRight);
+    text_time = create_text_layer(GRect(0,38,bounds.size.w,70), RESOURCE_ID_BIG_NOODLE_69, GTextAlignmentCenter);
+    text_date = create_text_layer(GRect(35,111,80,27), RESOURCE_ID_BIG_NOODLE_19, GTextAlignmentLeft);
+    text_battery = create_text_layer(GRect(108, 111, 40, 21), RESOURCE_ID_BIG_NOODLE_19, GTextAlignmentRight);
+    text_temp = create_text_layer(GRect(48, 136, 41, 20), RESOURCE_ID_BIG_NOODLE_19, GTextAlignmentRight);
   #endif
  
   //getting battery info

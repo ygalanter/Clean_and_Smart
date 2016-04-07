@@ -1,4 +1,4 @@
-var version = '2.21';
+var version = '2.24';
 var current_settings;
 
 /*  ****************************************** Weather Section **************************************************** */
@@ -76,10 +76,10 @@ function getWeather(coords /*woeid*/ ) {
     
     
     temperature = json.currently.temperature;
-    //console.log  ("++++ I am inside of 'getWeather()' callback. Temperature is " + temperature);
+    console.log  ("++++ I am inside of 'getWeather()' callback. Temperature is " + temperature);
     
     icon = json.currently.icon;
-    //console.log  ("++++ I am inside of 'getWeather()' callback. Icon code: " + icon);
+    console.log  ("++++ I am inside of 'getWeather()' callback. Icon code: " + icon);
    
     
     var dictionary = {
@@ -180,7 +180,7 @@ Pebble.addEventListener('ready',
              invertColors: 0,
              bluetoothAlert: 0, // new 2.18
              locationService: 0,
-             woeid: 0,
+             woeid: version >= '2.22'? '' : 0,
              language: 255,
              forecastIoApiKey: ''
          };
@@ -207,14 +207,14 @@ Pebble.addEventListener('ready',
 // Listen for when an AppMessage is received
 Pebble.addEventListener('appmessage',
   function(e) {
-    //console.log ("++++ I am inside of 'Pebble.addEventListener('appmessage'): AppMessage received");
+    console.log ("++++ I am inside of 'Pebble.addEventListener('appmessage'): AppMessage received");
     
     if (current_settings.locationService == 1) { // for manual location - request weather right away
-      // for now manual location is disabled: forecast.io uses automatic
-      //  //console.log ("++++ I am inside of 'Pebble.addEventListener('appmessage'): Requesting weather by WOEID");
-      //  *** getWeather(current_settings.woeid);
+     //***** console.log ("\n++++ I am inside of 'Pebble.addEventListener('appmessage'): Requesting weather by WOEID");
+     // console.log ("\n++++ I am inside of 'Pebble.addEventListener('appmessage'): Requesting weather by coords:" + current_settings.woeid);
+      getWeather(current_settings.woeid);
     } else {
-       //console.log ("++++ I am inside of 'Pebble.addEventListener('appmessage'): Requesting automatic location");
+       console.log ("++++ I am inside of 'Pebble.addEventListener('appmessage'): Requesting automatic location");
        getLocation();  // for automatic location - get location
     }
     
@@ -257,8 +257,10 @@ Pebble.addEventListener("webviewclosed",
      
       // only storing and passing to pebble temperature format if it changed, because it will cause Pebble to reissue weather AJAX
       // (or if forecast.io API Key was set/changed - then we need to update weather as well)
+      // (or if coordinates (former woeid) changed - then we need to update weather as well)
       if (current_settings.temperatureFormat != settings.temperatureFormat ||
-          current_settings.forecastIoApiKey != settings.forecastIoApiKey) {
+          current_settings.forecastIoApiKey != settings.forecastIoApiKey ||
+          current_settings.woeid != settings.woeid) {
         app_message_json.KEY_TEMPERATURE_FORMAT = settings.temperatureFormat;
       }
       

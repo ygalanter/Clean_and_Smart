@@ -286,7 +286,7 @@ void effect_invert_bw_only(GContext* ctx,  GRect position, void* param) {
         #ifdef PBL_COLOR // on Basalt invert only black or white
           pixel.argb = get_pixel(bitmap_info, y + position.origin.y, x + position.origin.x);
           //NOTE: THIS IS A SPECIAL CASE FOR CLEAN&SMART WATCHFACE - NOT TO IVERT BATTERY AND BLUETOOTH LINES
-          if ( !(gcolor_equal(pixel, GColorJaegerGreen) || gcolor_equal(pixel, GColorChromeYellow) || gcolor_equal(pixel, GColorDarkCandyAppleRed) || gcolor_equal(pixel, GColorCyan)) )
+          if ( !(gcolor_equal(pixel, GColorGreen) || gcolor_equal(pixel, GColorIcterine) || gcolor_equal(pixel, GColorRed) || gcolor_equal(pixel, GColorCyan)) )
             set_pixel(bitmap_info, y + position.origin.y, x + position.origin.x, (~get_pixel(bitmap_info, y + position.origin.y, x + position.origin.x))|11000000);
         #else // on Aplite since only 1 and 0 is returning, doing "not" by 1 - pixel
           set_pixel(bitmap_info, y + position.origin.y, x + position.origin.x, 1 - get_pixel(bitmap_info, y + position.origin.y, x + position.origin.x));
