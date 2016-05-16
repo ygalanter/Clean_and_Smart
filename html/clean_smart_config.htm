@@ -59,6 +59,7 @@
                     <option id="norvegian" value="4" class="item-select-option" style="display:none">Norsk</option>
                     <option id="swedish" value="0" class="item-select-option">Svenska</option>
                     <option id="russian" value="2" class="item-select-option" style="display:none">Русский</option>
+                    <option id="polish" value="7" class="item-select-option" style="display:none">Polskie</option>
                 </select>
             </label>
 
@@ -213,6 +214,10 @@
             }
             if (getURLVariable('version') >= '2.06') { // show these languages only for this version & above
                 $('#catalan').show(); $('#malay').show();
+            }
+
+            if (getURLVariable('version') >= '2.25') { // show these languages only for this version & above
+                $('#polish').show();
             }
 
             if (getURLVariable('version') >= '2.18') { //after version 2.18 use new bluetooth dropdown
