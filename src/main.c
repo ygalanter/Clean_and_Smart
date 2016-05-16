@@ -11,6 +11,8 @@ Layer *graphics_layer;
 BitmapLayer *temp_layer;
 GBitmap *meteoicons_all, *meteoicon_current;
 
+GFont bn_69, bn_30, bn_26, bn_20, bn_19;
+
 char s_date[] = "21  FEB  2015     "; //test
 char s_time[] = "88.44mm"; //test
 char s_dow[] = "WEDNESDAY     "; //test  
@@ -203,6 +205,43 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   
 }
 
+void load_fonts() {
+
+  fonts_unload_custom_font(bn_69);
+  fonts_unload_custom_font(bn_19);
+  
+  if (flag_language == LANG_RUSSIAN) {
+    bn_69 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_BIG_NOODLE_69));
+    bn_19 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_BIG_NOODLE_19));
+  } else  {
+    bn_69 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_BIG_NOODLE_ENG_69));
+    bn_19 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_BIG_NOODLE_ENG_19));
+  }
+  
+  #ifdef PBL_RECT
+    fonts_unload_custom_font(bn_30);
+    fonts_unload_custom_font(bn_26);
+    
+    if (flag_language == LANG_RUSSIAN) {
+      bn_30 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_BIG_NOODLE_30));
+      bn_26 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_BIG_NOODLE_26));
+    } else {
+      bn_30 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_BIG_NOODLE_ENG_30));
+      bn_26 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_BIG_NOODLE_ENG_26));
+    }  
+   
+  #else
+    fonts_unload_custom_font(bn_20);
+    
+    if (flag_language == LANG_RUSSIAN) {
+      bn_20 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_BIG_NOODLE_20));
+    } else {
+      bn_20 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_BIG_NOODLE_ENG_20));
+    }  
+  #endif
+}
+
+
 
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
@@ -290,6 +329,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
         if (t->value->int32 !=flag_language) {
           persist_write_int(KEY_LANGUAGE, t->value->int32);
           flag_language = t->value->int32;
+          load_fonts();
           need_time = 1;
         }  
         break;
@@ -332,9 +372,9 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
   
 
 //creates text layer at given coordinates, given font and alignment  
-TextLayer* create_text_layer(GRect coords, int font, GTextAlignment align) {
+TextLayer* create_text_layer(GRect coords, GFont font, GTextAlignment align) {
   TextLayer *text_layer = text_layer_create(coords);
-  text_layer_set_font(text_layer, fonts_load_custom_font(resource_get_handle(font)));
+  text_layer_set_font(text_layer, font);
   text_layer_set_text_color(text_layer, GColorWhite);  
   text_layer_set_background_color(text_layer, GColorClear);  
   text_layer_set_text_alignment(text_layer, align);
@@ -464,7 +504,6 @@ static void battery_handler(BatteryChargeState state) {
 }
 
 
-
 void handle_init(void) {
   
   // need to catch when app resumes focus after notification, otherwise effect layer won't restore
@@ -496,18 +535,28 @@ void handle_init(void) {
   #endif
   layer_add_child(window_layer, bitmap_layer_get_layer(temp_layer));
   
+  flag_hoursMinutesSeparator = persist_exists(KEY_HOURS_MINUTES_SEPARATOR)? persist_read_int(KEY_HOURS_MINUTES_SEPARATOR) : 0;
+  flag_dateFormat = persist_exists(KEY_DATE_FORMAT)? persist_read_int(KEY_DATE_FORMAT) : 0;
+  flag_invertColors = persist_exists(KEY_INVERT_COLORS)? persist_read_int(KEY_INVERT_COLORS) : 0;
+  flag_bluetooth_alert = persist_exists(KEY_BLUETOOTH_ALERT)? persist_read_int(KEY_BLUETOOTH_ALERT) : 0;
+  flag_locationService = persist_exists(KEY_LOCATION_SERVICE)? persist_read_int(KEY_LOCATION_SERVICE) : 0;
+  flag_weatherInterval = persist_exists(KEY_WEATHER_INTERVAL)? persist_read_int(KEY_WEATHER_INTERVAL) : 60; // default weather update is 1 hour
+  flag_language = persist_exists(KEY_LANGUAGE)? persist_read_int(KEY_LANGUAGE) : LANG_DEFAULT; // default - language set by pebble
+  
+  load_fonts();
+  
   #ifdef PBL_RECT
-    text_dow = create_text_layer(GRect(0,30,bounds.size.w,31), RESOURCE_ID_BIG_NOODLE_30, GTextAlignmentCenter);
-    text_time = create_text_layer(GRect(0,53,bounds.size.w,70), RESOURCE_ID_BIG_NOODLE_69, GTextAlignmentCenter);
-    text_date = create_text_layer(GRect(0,129,bounds.size.w,27), RESOURCE_ID_BIG_NOODLE_26, GTextAlignmentCenter);
-    text_battery = create_text_layer(GRect(98, 0, 43, 21), RESOURCE_ID_BIG_NOODLE_19, GTextAlignmentRight);
-    text_temp = create_text_layer(GRect(3, 0, 80, 21), RESOURCE_ID_BIG_NOODLE_19, GTextAlignmentLeft);
+    text_dow = create_text_layer(GRect(0,30,bounds.size.w,31), bn_30, GTextAlignmentCenter);
+    text_time = create_text_layer(GRect(0,53,bounds.size.w,70), bn_69, GTextAlignmentCenter);
+    text_date = create_text_layer(GRect(0,129,bounds.size.w,27), bn_26, GTextAlignmentCenter);
+    text_battery = create_text_layer(GRect(98, 0, 43, 21), bn_19, GTextAlignmentRight);
+    text_temp = create_text_layer(GRect(3, 0, 80, 21), bn_19, GTextAlignmentLeft);
   #else
-    text_dow = create_text_layer(GRect(0,29,bounds.size.w,31), RESOURCE_ID_BIG_NOODLE_20, GTextAlignmentCenter);
-    text_time = create_text_layer(GRect(0,38,bounds.size.w,70), RESOURCE_ID_BIG_NOODLE_69, GTextAlignmentCenter);
-    text_date = create_text_layer(GRect(35,111,80,27), RESOURCE_ID_BIG_NOODLE_19, GTextAlignmentLeft);
-    text_battery = create_text_layer(GRect(108, 111, 40, 21), RESOURCE_ID_BIG_NOODLE_19, GTextAlignmentRight);
-    text_temp = create_text_layer(GRect(48, 136, 41, 20), RESOURCE_ID_BIG_NOODLE_19, GTextAlignmentRight);
+    text_dow = create_text_layer(GRect(0,29,bounds.size.w,31), bn_20, GTextAlignmentCenter);
+    text_time = create_text_layer(GRect(0,38,bounds.size.w,70), bn_69, GTextAlignmentCenter);
+    text_date = create_text_layer(GRect(35,111,80,27), bn_19, GTextAlignmentLeft);
+    text_battery = create_text_layer(GRect(108, 111, 40, 21), bn_19, GTextAlignmentRight);
+    text_temp = create_text_layer(GRect(48, 136, 41, 20), bn_19, GTextAlignmentRight);
   #endif
  
   //getting battery info
@@ -535,16 +584,6 @@ void handle_init(void) {
   else
     text_layer_set_text(text_temp, "...");
    
-  
-  flag_hoursMinutesSeparator = persist_exists(KEY_HOURS_MINUTES_SEPARATOR)? persist_read_int(KEY_HOURS_MINUTES_SEPARATOR) : 0;
-  flag_dateFormat = persist_exists(KEY_DATE_FORMAT)? persist_read_int(KEY_DATE_FORMAT) : 0;
-  flag_invertColors = persist_exists(KEY_INVERT_COLORS)? persist_read_int(KEY_INVERT_COLORS) : 0;
-  flag_bluetooth_alert = persist_exists(KEY_BLUETOOTH_ALERT)? persist_read_int(KEY_BLUETOOTH_ALERT) : 0;
-  flag_locationService = persist_exists(KEY_LOCATION_SERVICE)? persist_read_int(KEY_LOCATION_SERVICE) : 0;
-  flag_weatherInterval = persist_exists(KEY_WEATHER_INTERVAL)? persist_read_int(KEY_WEATHER_INTERVAL) : 60; // default weather update is 1 hour
-  flag_language = persist_exists(KEY_LANGUAGE)? persist_read_int(KEY_LANGUAGE) : LANG_DEFAULT; // default - language set by pebble
-  
-  
   invert_colors(); //initial check for inverting colors;
   toggle_weather_visibility(); //initial check for enable/disable weather
   

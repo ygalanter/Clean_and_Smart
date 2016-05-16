@@ -23,6 +23,37 @@
     "resources": {
         "media": [
             {
+                "file": "fonts/big_noodle_titling.ttf",
+                "name": "BIG_NOODLE_ENG_19",
+                "targetPlatforms": null,
+                "type": "font"
+            },
+            {
+                "file": "fonts/big_noodle_titling.ttf",
+                "name": "BIG_NOODLE_ENG_20",
+                "targetPlatforms": null,
+                "type": "font"
+            },
+            {
+                "file": "fonts/big_noodle_titling.ttf",
+                "name": "BIG_NOODLE_ENG_26",
+                "targetPlatforms": null,
+                "type": "font"
+            },
+            {
+                "file": "fonts/big_noodle_titling.ttf",
+                "name": "BIG_NOODLE_ENG_30",
+                "targetPlatforms": null,
+                "type": "font"
+            },
+            {
+                "characterRegex": "[0-9:.amp ]",
+                "file": "fonts/big_noodle_titling.ttf",
+                "name": "BIG_NOODLE_ENG_69",
+                "targetPlatforms": null,
+                "type": "font"
+            },
+            {
                 "file": "images/icon_aplite.png",
                 "menuIcon": true,
                 "name": "MENU",
@@ -35,34 +66,34 @@
                 "type": "bitmap"
             },
             {
-                "characterRegex": "[0-9:.amp ]",
                 "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
-                "name": "BIG_NOODLE_69",
-                "type": "font"
-            },
-            {
-                "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
-                "name": "BIG_NOODLE_30",
-                "type": "font"
-            },
-            {
-                "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
-                "name": "BIG_NOODLE_26",
+                "name": "BIG_NOODLE_19",
+                "targetPlatforms": null,
                 "type": "font"
             },
             {
                 "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
                 "name": "BIG_NOODLE_20",
+                "targetPlatforms": null,
                 "type": "font"
             },
             {
                 "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
-                "name": "BIG_NOODLE_16",
+                "name": "BIG_NOODLE_26",
+                "targetPlatforms": null,
                 "type": "font"
             },
             {
                 "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
-                "name": "BIG_NOODLE_19",
+                "name": "BIG_NOODLE_30",
+                "targetPlatforms": null,
+                "type": "font"
+            },
+            {
+                "characterRegex": "[0-9:.amp ]",
+                "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
+                "name": "BIG_NOODLE_69",
+                "targetPlatforms": null,
                 "type": "font"
             }
         ]
@@ -75,7 +106,7 @@
         "chalk"
     ],
     "uuid": "4d4935d2-a1bb-407e-bb71-d4ed5cae4861",
-    "versionLabel": "2.24",
+    "versionLabel": "2.25",
     "watchapp": {
         "watchface": true
     }
