@@ -41,25 +41,25 @@ static void invert_colors() {
 
 
 
-// {*********************** THIS BLOCK PROPERLU RESTORES EFFECT LAYER AFTER A NOTIFICATION IS DISMISSED
+// // {*********************** THIS BLOCK PROPERLY RESTORES EFFECT LAYER AFTER A NOTIFICATION IS DISMISSED
   
-// when app got focus - restore and refresh window - that makes it dynamic again
-static void app_focus_changed(bool focused) {
-  if (focused && effect_layer) {
-     layer_set_hidden(window_layer, false);  
-     layer_mark_dirty(window_layer);
-  }
+// // when app got focus - restore and refresh window - that makes it dynamic again
+// static void app_focus_changed(bool focused) {
+//   if (focused && effect_layer) {
+//      layer_set_hidden(window_layer, false);  
+//      layer_mark_dirty(window_layer);
+//   }
   
-}
+// }
 
-// when app is about to regain focus - hide main window - this restores static pic of previous screen appear
-static void app_focus_changing(bool focused) {
-  if (focused && effect_layer) {
-     layer_set_hidden(window_layer, true);  
-  }
+// // when app is about to regain focus - hide main window - this restores static pic of previous screen appear
+// static void app_focus_changing(bool focused) {
+//   if (focused && effect_layer) {
+//      layer_set_hidden(window_layer, true);  
+//   }
   
-}
-// *********************** }
+// }
+// // *********************** }
 
 
 
@@ -162,7 +162,7 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
      
      switch(flag_dateFormat){
        case 0:
-         if (flag_language == LANG_RUSSIAN) { // if this is Russian - need double bytes
+         if (flag_language == LANG_RUSSIAN || flag_language == LANG_POLISH) { // if this is Russian - need double bytes
            strftime(s_date, sizeof(s_date), "%b   -%d-%Y", tick_time); // "DEC 10 2015"
            strncpy(&s_date[0], LANG_MONTH[flag_language][tick_time->tm_mon], 6);
          }  else {
@@ -506,11 +506,11 @@ static void battery_handler(BatteryChargeState state) {
 
 void handle_init(void) {
   
-  // need to catch when app resumes focus after notification, otherwise effect layer won't restore
-  app_focus_service_subscribe_handlers((AppFocusHandlers){
-    .did_focus = app_focus_changed,
-    .will_focus = app_focus_changing
-  });
+//   // need to catch when app resumes focus after notification, otherwise effect layer won't restore
+//   app_focus_service_subscribe_handlers((AppFocusHandlers){
+//     .did_focus = app_focus_changed,
+//     .will_focus = app_focus_changing
+//   });
   
   //going international
   setlocale(LC_ALL, "");
@@ -628,7 +628,7 @@ void handle_deinit(void) {
   tick_timer_service_unsubscribe();
   battery_state_service_unsubscribe();
   bluetooth_connection_service_unsubscribe();
-  app_focus_service_unsubscribe();
+//   app_focus_service_unsubscribe();
 }
   
 
