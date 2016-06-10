@@ -1,7 +1,8 @@
 #include <pebble.h>
 #include "main.h"
-#include "effect_layer.h"  
+#include <pebble-effect-layer/pebble-effect-layer.h> 
 #include "languages.h"
+
   
 Window *my_window;  
 Layer *window_layer;
@@ -30,11 +31,9 @@ GPoint center;
 
 static void invert_colors() {
   if (flag_invertColors == 1) {
-     effect_layer = effect_layer_create(bounds);
-     effect_layer_add_effect(effect_layer, effect_invert_bw_only, NULL);
-     layer_add_child(window_layer, effect_layer_get_layer(effect_layer));
+     effect_layer_set_frame(effect_layer, bounds);
   } else {
-     effect_layer_destroy(effect_layer);
+     effect_layer_set_frame(effect_layer, GRectZero);
   }
   
 }
@@ -533,7 +532,8 @@ void handle_init(void) {
   #else
     temp_layer =  bitmap_layer_create(GRect(86, 137, 41, 21));
   #endif
-  layer_add_child(window_layer, bitmap_layer_get_layer(temp_layer));
+  bitmap_layer_set_compositing_mode(temp_layer, GCompOpSet);
+  layer_add_child(graphics_layer, bitmap_layer_get_layer(temp_layer));
   
   flag_hoursMinutesSeparator = persist_exists(KEY_HOURS_MINUTES_SEPARATOR)? persist_read_int(KEY_HOURS_MINUTES_SEPARATOR) : 0;
   flag_dateFormat = persist_exists(KEY_DATE_FORMAT)? persist_read_int(KEY_DATE_FORMAT) : 0;
@@ -562,10 +562,7 @@ void handle_init(void) {
   //getting battery info
   battery_state_service_subscribe(battery_handler);
   battery_handler(battery_state_service_peek());
-  
-  graphics_layer = layer_create(bounds);
-  layer_set_update_proc(graphics_layer, graphics_update_proc);
-  layer_add_child(window_layer, graphics_layer);
+
   
   // Register callbacks
   app_message_register_inbox_received(inbox_received_callback);
@@ -583,6 +580,10 @@ void handle_init(void) {
     show_temperature(persist_read_int(KEY_WEATHER_TEMP));
   else
     text_layer_set_text(text_temp, "...");
+  
+  effect_layer = effect_layer_create(bounds);
+  effect_layer_add_effect(effect_layer, effect_invert_bw_only, NULL);
+  layer_add_child(window_layer, effect_layer_get_layer(effect_layer));
    
   invert_colors(); //initial check for inverting colors;
   toggle_weather_visibility(); //initial check for enable/disable weather

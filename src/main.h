@@ -53,3 +53,5 @@ const VibePattern VIBE_PATTERN_DOUBLE = {
 	.durations = (uint32_t []) {500,100,500},
 	.num_segments = 3
 };
+
+

@@ -8,6 +8,7 @@
 #define LANG_CATALAN 5
 #define LANG_MALAY 6
 #define LANG_POLISH 7
+#define LANG_HUNGARIAN 8
 #define LANG_DEFAULT 255
 
 char LANG_DAY[][7][23] = {
@@ -18,7 +19,8 @@ char LANG_DAY[][7][23] = {
     {"Søndag", "Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag"},
     {"Diumenge", "Dilluns", "Dimarts", "Dimecres", "Dijous", "Divendres", "Dissabte"},
     {"Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"},  
-    {"Niedziela", "Poniedziałek", "Wtorek", "Šroda", "Czwartek", "Pia¸tek", "Sobota"}  
+    {"Niedziela", "Poniedziałek", "Wtorek", "Šroda", "Czwartek", "Pia¸tek", "Sobota"},
+    {"Vasárnap", "Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat"}  
 };
 
 
@@ -30,5 +32,6 @@ char LANG_MONTH[][12][6] = {
     {"jan", "feb", "mar", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "des" },
     {"Gen", "Feb", "Mar", "Abr", "Mai", "jun", "jul", "Ago", "Set", "oct", "nov", "des" },
     {"jan", "Feb", "Mar", "Apr", "Mei", "jun", "jul", "Ogs", "Sep", "okt", "nov", "dis" },
-    {"Sty", "Lut", "Mar", "Kwi", "Maj", "Cze", "Lip", "Sie", "Wrz", "Paž", "Lis", "Gru" }  
+    {"Sty", "Lut", "Mar", "Kwi", "Maj", "Cze", "Lip", "Sie", "Wrz", "Paž", "Lis", "Gru" },
+    {"Jan", "Feb", "Már", "Ápr", "Máj", "Jún", "Júl", "Aug", "Sze", "Okt", "Nov", "Dec" }  
 };
