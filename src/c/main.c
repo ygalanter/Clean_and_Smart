@@ -502,6 +502,11 @@ static void battery_handler(BatteryChargeState state) {
   
 }
 
+//adjusting time location when timeline quickview shows. (original Y was hardcoded at 53 now doing percentage minus 15% of obstructed area)
+void unobstructed_changed(GRect free_area, void * context) {
+  layer_set_frame(text_layer_get_layer(text_time), GRect(0, bounds.size.h*53/168 - (bounds.size.h - free_area.size.h) * 15/100 ,bounds.size.w,70));
+}
+
 
 void handle_init(void) {
   
@@ -573,6 +578,9 @@ void handle_init(void) {
   // Open AppMessage
   app_message_open(500, 500); 
   
+  // to detect when timeline peek is shown
+  unobstructed_area_service_subscribe((UnobstructedAreaHandlers){.will_change = unobstructed_changed}, NULL);
+  
   
   // reading stored value
   if (persist_exists(KEY_WEATHER_CODE)) show_icon(persist_read_int(KEY_WEATHER_CODE));
@@ -629,6 +637,7 @@ void handle_deinit(void) {
   tick_timer_service_unsubscribe();
   battery_state_service_unsubscribe();
   bluetooth_connection_service_unsubscribe();
+  unobstructed_area_service_unsubscribe();
 //   app_focus_service_unsubscribe();
 }
   
