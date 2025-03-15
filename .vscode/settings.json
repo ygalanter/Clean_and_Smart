@@ -1,0 +1,7 @@
+{
+    "C_Cpp.errorSquiggles": "disabled",
+    "files.associations": {
+        "*.view": "xml",
+        "pebble-effect-layer.h": "c"
+    }
+}
