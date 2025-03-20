@@ -48,7 +48,19 @@
                 },
                 {
                     "file": "fonts/big_noodle_titling.ttf",
+                    "name": "BIG_NOODLE_ENG_35",
+                    "targetPlatforms": null,
+                    "type": "font"
+                },
+                {
+                    "file": "fonts/big_noodle_titling.ttf",
                     "name": "BIG_NOODLE_ENG_30",
+                    "targetPlatforms": null,
+                    "type": "font"
+                },
+                {
+                    "file": "fonts/big_noodle_titling.ttf",
+                    "name": "BIG_NOODLE_ENG_41",
                     "targetPlatforms": null,
                     "type": "font"
                 },
@@ -91,7 +103,19 @@
                 },
                 {
                     "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
+                    "name": "BIG_NOODLE_35",
+                    "targetPlatforms": null,
+                    "type": "font"
+                },
+                {
+                    "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
                     "name": "BIG_NOODLE_30",
+                    "targetPlatforms": null,
+                    "type": "font"
+                },
+                {
+                    "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
+                    "name": "BIG_NOODLE_41",
                     "targetPlatforms": null,
                     "type": "font"
                 },
@@ -106,10 +130,8 @@
         },
         "sdkVersion": "3",
         "targetPlatforms": [
-            "aplite",
             "basalt",
-            "chalk",
-            "diorite"
+            "emery"
         ],
         "uuid": "4d4935d2-a1bb-407e-bb71-d4ed5cae4861",
         "watchapp": {

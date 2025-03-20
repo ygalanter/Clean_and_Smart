@@ -19,7 +19,7 @@ char s_dow[] = "WEDNESDAY     ";      // test
 char s_battery[] = "100%";            // test
 char s_temp[] = "-100°";
 
-EffectLayer *effect_layer;
+EffectLayer *effect_layer, *zoom_layer;
 
 uint8_t flag_hoursMinutesSeparator, flag_dateFormat, flag_invertColors, flag_bluetooth_alert, flag_locationService, flag_weatherInterval, flag_language;
 bool flag_messaging_is_busy = false, flag_js_is_ready = false;
@@ -242,13 +242,13 @@ void load_fonts()
 
   if (flag_language == LANG_RUSSIAN)
   {
-    bn_30 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_BIG_NOODLE_30));
-    bn_26 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_BIG_NOODLE_26));
-  }
+    bn_30 = fonts_load_custom_font(resource_get_handle(PBL_IF_HEIGHT_168_ELSE(RESOURCE_ID_BIG_NOODLE_30, RESOURCE_ID_BIG_NOODLE_41)));
+    bn_26 = fonts_load_custom_font(resource_get_handle(PBL_IF_HEIGHT_168_ELSE(RESOURCE_ID_BIG_NOODLE_26, RESOURCE_ID_BIG_NOODLE_35)));
+  } 
   else
   {
-    bn_30 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_BIG_NOODLE_ENG_30));
-    bn_26 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_BIG_NOODLE_ENG_26));
+    bn_30 = fonts_load_custom_font(resource_get_handle(PBL_IF_HEIGHT_168_ELSE(RESOURCE_ID_BIG_NOODLE_ENG_30, RESOURCE_ID_BIG_NOODLE_ENG_41)));
+    bn_26 = fonts_load_custom_font(resource_get_handle(PBL_IF_HEIGHT_168_ELSE(RESOURCE_ID_BIG_NOODLE_ENG_26, RESOURCE_ID_BIG_NOODLE_ENG_35)));
   }
 
 #else
@@ -256,11 +256,11 @@ void load_fonts()
 
   if (flag_language == LANG_RUSSIAN)
   {
-    bn_20 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_BIG_NOODLE_20));
+    bn_20 = fonts_load_custom_font(resource_get_handle(PBL_IF_HEIGHT_168_ELSE(RESOURCE_ID_BIG_NOODLE_26, RESOURCE_ID_BIG_NOODLE_ENG_35)));
   }
   else
   {
-    bn_20 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_BIG_NOODLE_ENG_20));
+    bn_20 = fonts_load_custom_font(resource_get_handle(PBL_IF_HEIGHT_168_ELSE(RESOURCE_ID_BIG_NOODLE_ENG_26, RESOURCE_ID_BIG_NOODLE_ENG_35)));
   }
 #endif
 }
@@ -489,7 +489,7 @@ static void graphics_update_proc(Layer *layer, GContext *ctx)
 
 #ifdef PBL_RECT // on Aplite & Basalt draw think line for battery
   graphics_context_set_fill_color(ctx, color);
-  graphics_fill_rect(ctx, GRect(0, 25, 144, 3), 0, GCornersAll);
+  graphics_fill_rect(ctx, GRect(0, 25 * PBL_DISPLAY_HEIGHT / 168, PBL_DISPLAY_WIDTH, 3), 0, GCornersAll);
 #else // on Chalk draw think circle
   graphics_context_set_stroke_width(ctx, 4);
   graphics_context_set_stroke_color(ctx, color);
@@ -505,7 +505,7 @@ static void graphics_update_proc(Layer *layer, GContext *ctx)
 #endif
 
 #ifdef PBL_RECT // on Aplite & Basalt draw thick line
-    graphics_fill_rect(ctx, GRect(0, 165, 144, 3), 0, GCornersAll);
+    graphics_fill_rect(ctx, GRect(0, PBL_DISPLAY_HEIGHT - 3, PBL_DISPLAY_WIDTH, 3), 0, GCornersAll);
 #else // on Chalk draw think circle
     graphics_context_set_stroke_color(ctx, GColorCyan);
     graphics_draw_circle(ctx, center, 76);
@@ -599,9 +599,9 @@ void handle_init(void)
   load_fonts();
 
 #ifdef PBL_RECT
-  text_dow = create_text_layer(GRect(0, 30, bounds.size.w, 31), bn_30, GTextAlignmentCenter);
-  text_time = create_text_layer(GRect(0, 53, bounds.size.w, 70), bn_69, GTextAlignmentCenter);
-  text_date = create_text_layer(GRect(0, 129, bounds.size.w, 27), bn_26, GTextAlignmentCenter);
+  text_dow = create_text_layer(GRect(0, 30 * PBL_DISPLAY_HEIGHT / 168, bounds.size.w, 31 * PBL_DISPLAY_HEIGHT / 168), bn_30, GTextAlignmentCenter);
+  text_time = create_text_layer(GRect(0, 53 * PBL_DISPLAY_HEIGHT / 168 + PBL_IF_HEIGHT_168_ELSE(0, 18), bounds.size.w, 70 * PBL_DISPLAY_HEIGHT / 168), bn_69, GTextAlignmentCenter);
+  text_date = create_text_layer(GRect(0, 129 * PBL_DISPLAY_HEIGHT / 168, bounds.size.w, 27 * PBL_DISPLAY_HEIGHT / 168), bn_26, GTextAlignmentCenter);
   text_battery = create_text_layer(GRect(98, 0, 43, 21), bn_19, GTextAlignmentRight);
   text_temp = create_text_layer(GRect(3, 0, 80, 21), bn_19, GTextAlignmentLeft);
 #else
@@ -639,6 +639,12 @@ void handle_init(void)
   effect_layer = effect_layer_create(bounds);
   effect_layer_add_effect(effect_layer, effect_invert_bw_only, NULL);
   layer_add_child(window_layer, effect_layer_get_layer(effect_layer));
+
+  #ifdef PBL_PLATFORM_EMERY
+    zoom_layer = effect_layer_create(GRect(0, 53 * PBL_DISPLAY_HEIGHT / 168 + 18, bounds.size.w, 70 * PBL_DISPLAY_HEIGHT / 168));
+    effect_layer_add_effect(zoom_layer, effect_zoom, EL_ZOOM(139, 136)); 
+    layer_add_child(window_layer, effect_layer_get_layer(zoom_layer));
+  #endif
 
   invert_colors();             // initial check for inverting colors;
   toggle_weather_visibility(); // initial check for enable/disable weather

@@ -33,6 +33,13 @@
 #define BLUETOOTH_ALERT_STRONG 4
 #define BLUETOOTH_ALERT_DOUBLE 5
 
+// define macro comparing PBL_DISPLAY_HEIGHT with 168
+#if PBL_DISPLAY_HEIGHT == 168
+  #define PBL_IF_HEIGHT_168_ELSE(expr_if_true, expr_if_false) (expr_if_true)
+#else
+  #define PBL_IF_HEIGHT_168_ELSE(expr_if_true, expr_if_false) (expr_if_false)
+#endif
+
 // bluetooth vibe patterns
 const VibePattern VIBE_PATTERN_WEAK = {
 	.durations = (uint32_t[]){100},
