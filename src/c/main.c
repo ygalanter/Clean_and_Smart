@@ -19,7 +19,7 @@ char s_dow[] = "WEDNESDAY     ";      // test
 char s_battery[] = "100%";            // test
 char s_temp[] = "-100°";
 
-EffectLayer *effect_layer, *zoom_layer;
+EffectLayer *effect_layer, *zoom_layer_time, *zoom_layer_meteoicon;
 
 uint8_t flag_hoursMinutesSeparator, flag_dateFormat, flag_invertColors, flag_bluetooth_alert, flag_locationService, flag_weatherInterval, flag_language;
 bool flag_messaging_is_busy = false, flag_js_is_ready = false;
@@ -68,7 +68,7 @@ static void toggle_weather_visibility()
     layer_set_hidden(text_layer_get_layer(text_temp), true);
     layer_set_hidden(bitmap_layer_get_layer(temp_layer), true);
 #ifdef PBL_RECT
-    layer_set_frame(text_layer_get_layer(text_battery), GRect(49, 0, 43, 21));
+    layer_set_frame(text_layer_get_layer(text_battery), GRect(49, 0, 43 * PBL_DISPLAY_WIDTH / 144, 21 * PBL_DISPLAY_HEIGHT / 168));
 #endif
   }
   else
@@ -77,7 +77,7 @@ static void toggle_weather_visibility()
     layer_set_hidden(text_layer_get_layer(text_temp), false);
     layer_set_hidden(bitmap_layer_get_layer(temp_layer), false);
 #ifdef PBL_RECT
-    layer_set_frame(text_layer_get_layer(text_battery), GRect(98, 0, 43, 21));
+    layer_set_frame(text_layer_get_layer(text_battery), GRect(PBL_DISPLAY_WIDTH - 46 * PBL_DISPLAY_WIDTH / 144, 0, 43 * PBL_DISPLAY_WIDTH / 144, 21 * PBL_DISPLAY_HEIGHT / 168));
 #endif
   }
 }
@@ -228,12 +228,12 @@ void load_fonts()
   if (flag_language == LANG_RUSSIAN)
   {
     bn_69 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_BIG_NOODLE_69));
-    bn_19 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_BIG_NOODLE_19));
+    bn_19 = fonts_load_custom_font(resource_get_handle(PBL_IF_HEIGHT_168_ELSE(RESOURCE_ID_BIG_NOODLE_19, RESOURCE_ID_BIG_NOODLE_26)));
   }
   else
   {
     bn_69 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_BIG_NOODLE_ENG_69));
-    bn_19 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_BIG_NOODLE_ENG_19));
+    bn_19 = fonts_load_custom_font(resource_get_handle(PBL_IF_HEIGHT_168_ELSE(RESOURCE_ID_BIG_NOODLE_ENG_19, RESOURCE_ID_BIG_NOODLE_ENG_26)));
   }
 
 #ifdef PBL_RECT
@@ -581,7 +581,7 @@ void handle_init(void)
 
   meteoicons_all = gbitmap_create_with_resource(RESOURCE_ID_METEOICONS);
 #ifdef PBL_RECT
-  temp_layer = bitmap_layer_create(GRect(51, 1, 41, 20));
+  temp_layer = bitmap_layer_create(GRect(51 * PBL_DISPLAY_WIDTH / 144, 1, 41 * PBL_DISPLAY_WIDTH / 144, 20 * PBL_DISPLAY_HEIGHT / 168));
 #else
   temp_layer = bitmap_layer_create(GRect(86, 137, 41, 21));
 #endif
@@ -602,10 +602,20 @@ void handle_init(void)
   text_dow = create_text_layer(GRect(0, 30 * PBL_DISPLAY_HEIGHT / 168, bounds.size.w, 31 * PBL_DISPLAY_HEIGHT / 168), bn_30, GTextAlignmentCenter);
   text_time = create_text_layer(GRect(0, 53 * PBL_DISPLAY_HEIGHT / 168 + PBL_IF_HEIGHT_168_ELSE(0, 18), bounds.size.w, 70 * PBL_DISPLAY_HEIGHT / 168), bn_69, GTextAlignmentCenter);
   text_date = create_text_layer(GRect(0, 129 * PBL_DISPLAY_HEIGHT / 168, bounds.size.w, 27 * PBL_DISPLAY_HEIGHT / 168), bn_26, GTextAlignmentCenter);
-  text_battery = create_text_layer(GRect(98, 0, 43, 21), bn_19, GTextAlignmentRight);
-  text_temp = create_text_layer(GRect(3, 0, 80, 21), bn_19, GTextAlignmentLeft);
+  text_battery = create_text_layer(GRect(PBL_DISPLAY_WIDTH - 46 * PBL_DISPLAY_WIDTH / 144, 0, 43 * PBL_DISPLAY_WIDTH / 144, 21 * PBL_DISPLAY_HEIGHT / 168), bn_19, GTextAlignmentRight);
+  text_temp = create_text_layer(GRect(3, 0, 80 * PBL_DISPLAY_WIDTH / 144, 21 * PBL_DISPLAY_HEIGHT / 168), bn_19, GTextAlignmentLeft);
+
+  #if PBL_DISPLAY_HEIGHT != 168
+  zoom_layer_time = effect_layer_create(GRect(0, 53 * PBL_DISPLAY_HEIGHT / 168 + 18, bounds.size.w, 70 * PBL_DISPLAY_HEIGHT / 168));
+  effect_layer_add_effect(zoom_layer_time, effect_zoom, EL_ZOOM(139, 136)); 
+  layer_add_child(window_layer, effect_layer_get_layer(zoom_layer_time));
+
+  zoom_layer_meteoicon = effect_layer_create(GRect(51 * PBL_DISPLAY_WIDTH / 144, 1, 41 * PBL_DISPLAY_WIDTH / 144, 20 * PBL_DISPLAY_HEIGHT / 168));
+  effect_layer_add_effect(zoom_layer_meteoicon, effect_zoom, EL_ZOOM(139, 136)); 
+  layer_add_child(window_layer, effect_layer_get_layer(zoom_layer_meteoicon));
+  #endif
 #else
-  text_dow = create_text_layer(GRect(0, 29, bounds.size.w, 31), bn_20, GTextAlignmentCenter);
+  text_dow = create_text_layer(GRect(0, 23, bounds.size.w, 31), bn_20, GTextAlignmentCenter);
   text_time = create_text_layer(GRect(0, 38, bounds.size.w, 70), bn_69, GTextAlignmentCenter);
   text_date = create_text_layer(GRect(35, 111, 80, 27), bn_19, GTextAlignmentLeft);
   text_battery = create_text_layer(GRect(108, 111, 40, 21), bn_19, GTextAlignmentRight);
@@ -639,12 +649,6 @@ void handle_init(void)
   effect_layer = effect_layer_create(bounds);
   effect_layer_add_effect(effect_layer, effect_invert_bw_only, NULL);
   layer_add_child(window_layer, effect_layer_get_layer(effect_layer));
-
-  #ifdef PBL_PLATFORM_EMERY
-    zoom_layer = effect_layer_create(GRect(0, 53 * PBL_DISPLAY_HEIGHT / 168 + 18, bounds.size.w, 70 * PBL_DISPLAY_HEIGHT / 168));
-    effect_layer_add_effect(zoom_layer, effect_zoom, EL_ZOOM(139, 136)); 
-    layer_add_child(window_layer, effect_layer_get_layer(zoom_layer));
-  #endif
 
   invert_colors();             // initial check for inverting colors;
   toggle_weather_visibility(); // initial check for enable/disable weather
