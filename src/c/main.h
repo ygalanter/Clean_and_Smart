@@ -34,10 +34,14 @@
 #define BLUETOOTH_ALERT_DOUBLE 5
 
 // define macro comparing PBL_DISPLAY_HEIGHT with 168
+#ifdef PBL_RECT
 #if PBL_DISPLAY_HEIGHT == 168
   #define PBL_IF_HEIGHT_168_ELSE(expr_if_true, expr_if_false) (expr_if_true)
 #else
   #define PBL_IF_HEIGHT_168_ELSE(expr_if_true, expr_if_false) (expr_if_false)
+#endif
+#else
+#define PBL_IF_HEIGHT_168_ELSE(expr_if_true, expr_if_false) (expr_if_true)
 #endif
 
 // bluetooth vibe patterns
