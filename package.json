@@ -90,6 +90,8 @@
                 {
                     "file": "images/icon_steps_19.png",
                     "name": "ICON_STEPS",
+                    "memoryFormat": "1BitPalette",
+                    "spaceOptimization": "memory",
                     "targetPlatforms": [
                         "chalk"
                     ],
@@ -98,6 +100,8 @@
                 {
                     "file": "images/icon_steps_26.png",
                     "name": "ICON_STEPS",
+                    "memoryFormat": "1BitPalette",
+                    "spaceOptimization": "memory",
                     "targetPlatforms": [
                         "aplite",
                         "basalt",
@@ -108,6 +112,8 @@
                 {
                     "file": "images/icon_steps_35.png",
                     "name": "ICON_STEPS",
+                    "memoryFormat": "1BitPalette",
+                    "spaceOptimization": "memory",
                     "targetPlatforms": [
                         "emery"
                     ],
@@ -171,5 +177,5 @@
             "watchface": true
         }
     },
-    "version": "2.51.0"
+    "version": "2.52.0"
 }

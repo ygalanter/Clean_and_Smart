@@ -347,10 +347,13 @@ static void layout_step_row(TextLayer *text, BitmapLayer *icon, GRect full_frame
   int total_w = icon_w + STEP_ICON_GAP + content.w;
   int start_x = full_frame.origin.x + (full_frame.size.w - total_w) / 2;
 
-  // Match icon vertical center to rendered text block, not the full row frame
-  int text_y_offset = (full_frame.size.h - content.h) / 2;
-  int text_center_y = full_frame.origin.y + text_y_offset + content.h / 2;
-  int icon_y = text_center_y - icon_h / 2;
+  // Bottom-align icon with the rendered text block (feet sit on the number baseline)
+  int text_block_top = full_frame.origin.y + (full_frame.size.h - content.h) / 2;
+  int icon_y = text_block_top + content.h - icon_h;
+  if (icon_y < full_frame.origin.y)
+  {
+    icon_y = full_frame.origin.y;
+  }
 
   layer_set_frame(bitmap_layer_get_layer(icon), GRect(start_x, icon_y, icon_w, icon_h));
   layer_set_hidden(bitmap_layer_get_layer(icon), false);
