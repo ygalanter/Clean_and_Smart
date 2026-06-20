@@ -205,6 +205,8 @@ You can use **both**: develop C locally, push to GitHub, pull/build in CloudPebb
    [cloudpebble.repebble.com/ide/import/github/yaronf/Clean_and_Smart](https://cloudpebble.repebble.com/ide/import/github/yaronf/Clean_and_Smart)
 3. Build → run the **basalt** emulator → open watchface **Settings** to test Clay.
 
+**Import error `Invalid semver 2.50`:** CloudPebble requires strict semver (`major.minor.patch`). This repo uses `2.50.0` in `package.json` (legacy Pebble faces often used `2.50`, which local `rebble build` accepts but CloudPebble rejects).
+
 Upstream (original author):  
 [cloudpebble.repebble.com/ide/import/github/ygalanter/Clean_and_Smart](https://cloudpebble.repebble.com/ide/import/github/ygalanter/Clean_and_Smart)
 
