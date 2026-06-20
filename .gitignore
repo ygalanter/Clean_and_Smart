@@ -1,6 +1,8 @@
 node_modules
 build
 *build
+build/clay-preview.html
+build/clay-preview.url
 
 # stpyv8 stub local pip install artifacts
 docs/tools/stpyv8_arm_stub/build/

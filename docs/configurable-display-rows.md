@@ -309,6 +309,18 @@ Forward and persist new keys in `current_settings`.
 
 Legacy [`html/clean_smart_config.htm`](../html/clean_smart_config.htm): do not update.
 
+### Previewing Clay on arm64 (visual only)
+
+Emulator PKJS is unavailable on arm64 WSL; use Chrome on Windows to review the settings **layout** after editing `config.json`. See [`arm64-pebble-dev.md` — Clay settings visual check](arm64-pebble-dev.md#clay-settings-visual-check):
+
+```bash
+rebble build
+node docs/tools/clay-preview-url.js
+# open build/clay-preview.html in Windows Chrome
+```
+
+Full save-to-watch testing still requires `rebble install --phone <ip>`.
+
 ---
 
 ## Typography and casing

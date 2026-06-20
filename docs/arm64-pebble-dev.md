@@ -173,7 +173,52 @@ rebble install --phone <phone-ip>
 
 Use this for Clay settings and weather during Phase 2+ if emulator PKJS is required.
 
+**Visual-only Clay preview (arm64):** PKJS does not run in the WSL emulator, but you can preview the settings **layout** in Chrome on Windows — see [Clay settings visual check](#clay-settings-visual-check) below.
+
 **Alternative:** x86_64 Linux VM or Docker with a full Pebble SDK install (real stpyv8). Community images such as [ClusterM/pebble-dev-arm-linux](https://github.com/ClusterM/pebble-dev-arm-linux) document similar limitations on native arm64 and use containers for amd64.
+
+---
+
+## Clay settings visual check
+
+Use this during **Phase 2** when editing [`src/pkjs/config.json`](../src/pkjs/config.json). It checks labels, sections, and control types — **not** save-to-watch or persistence (that still needs a phone; see above).
+
+### 1. Build and generate preview HTML
+
+From the repo root in WSL:
+
+```bash
+rebble build
+node docs/tools/clay-preview-url.js
+# prints: .../build/clay-preview.html
+```
+
+### 2. Open in Chrome (Windows)
+
+The HTML file lives under WSL. Open it from Windows Chrome, for example:
+
+- **File → Open** and paste the WSL path, e.g.  
+  `\\wsl$\Ubuntu\home\yaronf\misc\pt2-watchfaces\Clean_and_Smart\build\clay-preview.html`  
+  (adjust distro/username if yours differ), or
+- Copy to a Windows folder:  
+  `cp build/clay-preview.html /mnt/c/Users/<You>/Downloads/clay-preview.html`  
+  then open from Downloads in Chrome.
+
+Use a **phone-sized** narrow window (~200px wide) to approximate the Pebble settings WebView.
+
+### 3. What to expect
+
+- You should see the Clay page (dark theme, orange accents) with all sections from `config.json`.
+- **Submit / Save** may not return to a watch — there is no PKJS bridge in this preview. That is fine for layout review.
+- After changing `config.json`, re-run `node docs/tools/clay-preview-url.js` and refresh the browser.
+
+### Limitations
+
+| Works in preview | Does not |
+|---|---|
+| Section headings, labels, selects, toggles, colors | Settings applied to emulator watch |
+| Default values from `config.json` | `localStorage` / saved phone settings |
+| Layout after editing `config.json` | Weather fetch, geolocation, full PKJS flow |
 
 ---
 
@@ -182,4 +227,5 @@ Use this for Clay settings and weather during Phase 2+ if emulator PKJS is requi
 | Path | Purpose |
 |---|---|
 | [`docs/tools/stpyv8_arm_stub/`](tools/stpyv8_arm_stub/) | stpyv8 stub for arm64 |
+| [`docs/tools/clay-preview-url.js`](tools/clay-preview-url.js) | Generate Clay preview HTML for Chrome |
 | [`configurable-display-rows.md`](configurable-display-rows.md) | Feature plan (Phase 0 checklist links here) |
