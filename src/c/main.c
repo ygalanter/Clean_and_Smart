@@ -9,8 +9,7 @@ Layer *window_layer;
 
 TextLayer *text_time, *text_row_top, *text_row_bottom, *text_battery, *text_temp;
 Layer *graphics_layer;
-BitmapLayer *temp_layer;
-Layer *step_icon_top, *step_icon_bottom;
+BitmapLayer *temp_layer, *step_icon_top, *step_icon_bottom;
 GBitmap *meteoicons_all, *meteoicon_current, *steps_icon_bitmap;
 
 GFont bn_69, bn_30, bn_26, bn_20, bn_19;
@@ -171,22 +170,8 @@ static void tint_step_icon(void)
       palette[i] = new_color;
     }
   }
-  if (step_icon_top) layer_mark_dirty(step_icon_top);
-  if (step_icon_bottom) layer_mark_dirty(step_icon_bottom);
-}
-
-static void step_icon_layer_update_proc(Layer *layer, GContext *ctx)
-{
-  if (!steps_icon_bitmap) return;
-
-  GRect bounds = layer_get_bounds(layer);
-  GSize bmp_size = gbitmap_get_bounds(steps_icon_bitmap).size;
-  GRect dest = GRect((bounds.size.w - bmp_size.w) / 2,
-                     (bounds.size.h - bmp_size.h) / 2,
-                     bmp_size.w, bmp_size.h);
-
-  graphics_context_set_compositing_mode(ctx, GCompOpSet);
-  graphics_draw_bitmap_in_rect(ctx, steps_icon_bitmap, dest);
+  if (step_icon_top) layer_mark_dirty(bitmap_layer_get_layer(step_icon_top));
+  if (step_icon_bottom) layer_mark_dirty(bitmap_layer_get_layer(step_icon_bottom));
 }
 
 // configurable top/bottom rows (flag_topRow / flag_bottomRow); center time row unchanged
@@ -283,12 +268,11 @@ static void get_abbr_month(char *buf, size_t len, struct tm *tick_time)
   buf[len - 1] = '\0';
 }
 
-// mode 3: abbreviated DOW + abbreviated date, ordered by KEY_DATE_FORMAT
+// mode 3: abbreviated DOW + month-day (no year), ordered by KEY_DATE_FORMAT
 static void format_abbr_dow_date(char *buf, size_t len, struct tm *tick_time)
 {
   char dow[ROW_DOW_ABBR_MAX + 1];
   char mon[ROW_MONTH_ABBR_MAX + 1];
-  const int year = tick_time->tm_year + 1900;
 
   get_abbr_dow(dow, sizeof(dow), tick_time);
   get_abbr_month(mon, sizeof(mon), tick_time);
@@ -296,21 +280,17 @@ static void format_abbr_dow_date(char *buf, size_t len, struct tm *tick_time)
   switch (flag_dateFormat)
   {
   case 0:
-    snprintf(buf, ROW_TEXT_BUF_SIZE, "%.*s %.*s-%02d-%04d",
-             ROW_DOW_ABBR_MAX, dow, ROW_MONTH_ABBR_MAX, mon, tick_time->tm_mday, year);
+    snprintf(buf, len, "%.*s %.*s-%02d",
+             ROW_DOW_ABBR_MAX, dow, ROW_MONTH_ABBR_MAX, mon, tick_time->tm_mday);
     break;
   case 1:
-    snprintf(buf, ROW_TEXT_BUF_SIZE, "%.*s %02d-%.*s-%04d",
-             ROW_DOW_ABBR_MAX, dow, tick_time->tm_mday, ROW_MONTH_ABBR_MAX, mon, year);
+    snprintf(buf, len, "%.*s %02d-%.*s",
+             ROW_DOW_ABBR_MAX, dow, tick_time->tm_mday, ROW_MONTH_ABBR_MAX, mon);
     break;
   case 2:
-    snprintf(buf, ROW_TEXT_BUF_SIZE, "%.*s %04d-%02d-%02d",
-             ROW_DOW_ABBR_MAX, dow, year, tick_time->tm_mon + 1, tick_time->tm_mday);
+    snprintf(buf, len, "%.*s %02d-%02d",
+             ROW_DOW_ABBR_MAX, dow, tick_time->tm_mon + 1, tick_time->tm_mday);
     break;
-  }
-  if (len < ROW_TEXT_BUF_SIZE)
-  {
-    buf[len - 1] = '\0';
   }
 }
 
@@ -353,63 +333,39 @@ static void format_steps(char *buf, size_t len)
 #endif
 }
 
-// icon height matches the row font size (Big Noodle nominal pt)
-static int step_icon_line_height(TextLayer *text)
-{
-  if (text == text_row_top)
-  {
-#ifdef PBL_RECT
-    return PBL_IF_HEIGHT_168_ELSE(30, 41);
-#else
-    return 20;
-#endif
-  }
-  if (text == text_row_bottom)
-  {
-#ifdef PBL_RECT
-    return PBL_IF_HEIGHT_168_ELSE(26, 35);
-#else
-    return 19;
-#endif
-  }
-  return 18;
-}
-
 // step row: icon + gap + text, centered as one group within the row bounds
-static void layout_step_row(TextLayer *text, Layer *icon, GRect full_frame, const char *text_str)
+static void layout_step_row(TextLayer *text, BitmapLayer *icon, GRect full_frame, const char *text_str)
 {
   text_layer_set_text(text, text_str);
   text_layer_set_text_alignment(text, GTextAlignmentLeft);
 
   GSize content = text_layer_get_content_size(text);
-  int icon_size = step_icon_line_height(text);
-  if (icon_size > full_frame.size.h)
-  {
-    icon_size = full_frame.size.h;
-  }
+  GSize icon_sz = gbitmap_get_bounds(steps_icon_bitmap).size;
+  int icon_w = icon_sz.w;
+  int icon_h = icon_sz.h;
 
-  int total_w = icon_size + STEP_ICON_GAP + content.w;
+  int total_w = icon_w + STEP_ICON_GAP + content.w;
   int start_x = full_frame.origin.x + (full_frame.size.w - total_w) / 2;
-  int icon_y = full_frame.origin.y + (full_frame.size.h - icon_size) / 2;
+  int icon_y = full_frame.origin.y + (full_frame.size.h - icon_h) / 2;
 
-  layer_set_frame(icon, GRect(start_x, icon_y, icon_size, icon_size));
-  layer_set_hidden(icon, false);
+  layer_set_frame(bitmap_layer_get_layer(icon), GRect(start_x, icon_y, icon_w, icon_h));
+  layer_set_hidden(bitmap_layer_get_layer(icon), false);
 
   layer_set_frame(text_layer_get_layer(text),
-                  GRect(start_x + icon_size + STEP_ICON_GAP, full_frame.origin.y,
+                  GRect(start_x + icon_w + STEP_ICON_GAP, full_frame.origin.y,
                         content.w, full_frame.size.h));
 }
 
-static void layout_text_row(TextLayer *text, Layer *icon, GRect full_frame,
+static void layout_text_row(TextLayer *text, BitmapLayer *icon, GRect full_frame,
                             GTextAlignment align, const char *text_str)
 {
-  layer_set_hidden(icon, true);
+  layer_set_hidden(bitmap_layer_get_layer(icon), true);
   layer_set_frame(text_layer_get_layer(text), full_frame);
   text_layer_set_text_alignment(text, align);
   text_layer_set_text(text, text_str);
 }
 
-static void update_row(TextLayer *text, Layer *icon, GRect full_frame,
+static void update_row(TextLayer *text, BitmapLayer *icon, GRect full_frame,
                        GTextAlignment text_align, RowDisplayMode mode, struct tm *tick_time,
                        char *buf, size_t buf_len)
 {
@@ -995,15 +951,18 @@ void handle_init(void)
   text_temp = create_text_layer(GRect(48, 136, 41, 20), bn_19, GTextAlignmentRight);
 #endif
 
-  step_icon_top = layer_create(GRect(0, 0, bounds.size.w, row_top_frame.size.h));
-  layer_set_update_proc(step_icon_top, step_icon_layer_update_proc);
-  layer_set_hidden(step_icon_top, true);
-  layer_add_child(window_layer, step_icon_top);
+  GSize icon_sz = gbitmap_get_bounds(steps_icon_bitmap).size;
+  step_icon_top = bitmap_layer_create(GRect(0, 0, icon_sz.w, icon_sz.h));
+  bitmap_layer_set_bitmap(step_icon_top, steps_icon_bitmap);
+  bitmap_layer_set_compositing_mode(step_icon_top, GCompOpSet);
+  layer_set_hidden(bitmap_layer_get_layer(step_icon_top), true);
+  layer_add_child(window_layer, bitmap_layer_get_layer(step_icon_top));
 
-  step_icon_bottom = layer_create(GRect(0, 0, bounds.size.w, row_bottom_frame.size.h));
-  layer_set_update_proc(step_icon_bottom, step_icon_layer_update_proc);
-  layer_set_hidden(step_icon_bottom, true);
-  layer_add_child(window_layer, step_icon_bottom);
+  step_icon_bottom = bitmap_layer_create(GRect(0, 0, icon_sz.w, icon_sz.h));
+  bitmap_layer_set_bitmap(step_icon_bottom, steps_icon_bitmap);
+  bitmap_layer_set_compositing_mode(step_icon_bottom, GCompOpSet);
+  layer_set_hidden(bitmap_layer_get_layer(step_icon_bottom), true);
+  layer_add_child(window_layer, bitmap_layer_get_layer(step_icon_bottom));
 
   // getting battery info
   battery_state_service_subscribe(battery_handler);
@@ -1065,8 +1024,8 @@ void handle_deinit(void)
   text_layer_destroy(text_battery);
   text_layer_destroy(text_temp);
 
-  layer_destroy(step_icon_top);
-  layer_destroy(step_icon_bottom);
+  bitmap_layer_destroy(step_icon_top);
+  bitmap_layer_destroy(step_icon_bottom);
   gbitmap_destroy(steps_icon_bitmap);
   gbitmap_destroy(meteoicons_all);
   gbitmap_destroy(meteoicon_current);

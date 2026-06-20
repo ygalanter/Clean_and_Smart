@@ -88,8 +88,29 @@
                     "type": "bitmap"
                 },
                 {
-                    "file": "images/icon_steps.png",
+                    "file": "images/icon_steps_20.png",
                     "name": "ICON_STEPS",
+                    "targetPlatforms": [
+                        "chalk"
+                    ],
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/icon_steps_30.png",
+                    "name": "ICON_STEPS",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "diorite"
+                    ],
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/icon_steps_41.png",
+                    "name": "ICON_STEPS",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
                     "type": "bitmap"
                 },
                 {
