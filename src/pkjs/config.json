@@ -50,6 +50,43 @@
   {
     "type": "section",
     "items": [
+      { "type": "heading", "defaultValue": "Display Rows" },
+      {
+        "type": "select",
+        "messageKey": "KEY_TOP_ROW",
+        "label": "Top Row",
+        "defaultValue": "0",
+        "options": [
+          { "label": "Day of week", "value": "0" },
+          { "label": "Date", "value": "1" },
+          { "label": "Step count", "value": "2" },
+          { "label": "Abbreviated day of week + date", "value": "3" }
+        ]
+      },
+      {
+        "type": "select",
+        "messageKey": "KEY_BOTTOM_ROW",
+        "label": "Bottom Row",
+        "defaultValue": "1",
+        "options": [
+          { "label": "Day of week", "value": "0" },
+          { "label": "Date", "value": "1" },
+          { "label": "Step count", "value": "2" },
+          { "label": "Abbreviated day of week + date", "value": "3" }
+        ]
+      },
+      {
+        "type": "toggle",
+        "messageKey": "KEY_LIVE_STEPS",
+        "label": "Live step updates",
+        "description": "Updates step count as you walk. Uses more battery. Only applies when a row is set to Step count.",
+        "defaultValue": false
+      }
+    ]
+  },
+  {
+    "type": "section",
+    "items": [
       { "type": "heading", "defaultValue": "Weather" },
       {
         "type": "select",

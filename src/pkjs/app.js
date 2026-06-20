@@ -80,6 +80,9 @@ Pebble.addEventListener('ready', function () {
       temperatureFormat:     0,
       hoursMinutesSeparator: 0,
       dateFormat:            0,
+      topRow:                0,
+      bottomRow:             1,
+      liveSteps:             0,
       bluetoothAlert:        0,
       language:              255,
       textColor:             16777215,
@@ -117,6 +120,9 @@ Pebble.addEventListener('webviewclosed', function (e) {
   msg.KEY_LANGUAGE                = val('KEY_LANGUAGE');
   msg.KEY_TEXT_COLOR              = val('KEY_TEXT_COLOR');
   msg.KEY_BG_COLOR                = val('KEY_BG_COLOR');
+  msg.KEY_TOP_ROW                 = val('KEY_TOP_ROW');
+  msg.KEY_BOTTOM_ROW              = val('KEY_BOTTOM_ROW');
+  msg.KEY_LIVE_STEPS              = val('KEY_LIVE_STEPS');
 
   var newTempFormat = val('KEY_TEMPERATURE_FORMAT');
   if (!current_settings || current_settings.temperatureFormat !== newTempFormat) {
@@ -127,6 +133,9 @@ Pebble.addEventListener('webviewclosed', function (e) {
     temperatureFormat:     newTempFormat,
     hoursMinutesSeparator: val('KEY_HOURS_MINUTES_SEPARATOR'),
     dateFormat:            val('KEY_DATE_FORMAT'),
+    topRow:                val('KEY_TOP_ROW'),
+    bottomRow:             val('KEY_BOTTOM_ROW'),
+    liveSteps:             val('KEY_LIVE_STEPS'),
     bluetoothAlert:        val('KEY_BLUETOOTH_ALERT'),
     language:              val('KEY_LANGUAGE'),
     textColor:             val('KEY_TEXT_COLOR'),

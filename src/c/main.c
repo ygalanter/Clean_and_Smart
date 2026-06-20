@@ -22,6 +22,7 @@ char s_temp[] = "-100°";
 EffectLayer *zoom_layer_time, *zoom_layer_meteoicon;
 
 uint8_t flag_hoursMinutesSeparator, flag_dateFormat, flag_bluetooth_alert, flag_language;
+uint8_t flag_topRow, flag_bottomRow, flag_live_steps;
 int flag_textColor, flag_bgColor;
 bool flag_messaging_is_busy = false, flag_js_is_ready = false;
 
@@ -379,6 +380,27 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
         window_set_background_color(my_window, GColorFromHEX(flag_bgColor));
       }
       break;
+    case KEY_TOP_ROW:
+      if (t->value->int32 != flag_topRow)
+      {
+        persist_write_int(KEY_TOP_ROW, t->value->int32);
+        flag_topRow = t->value->int32;
+      }
+      break;
+    case KEY_BOTTOM_ROW:
+      if (t->value->int32 != flag_bottomRow)
+      {
+        persist_write_int(KEY_BOTTOM_ROW, t->value->int32);
+        flag_bottomRow = t->value->int32;
+      }
+      break;
+    case KEY_LIVE_STEPS:
+      if (t->value->int32 != flag_live_steps)
+      {
+        persist_write_int(KEY_LIVE_STEPS, t->value->int32);
+        flag_live_steps = t->value->int32;
+      }
+      break;
     }
 
     // Look for next item
@@ -606,6 +628,9 @@ void handle_init(void)
 
   flag_hoursMinutesSeparator = persist_exists(KEY_HOURS_MINUTES_SEPARATOR) ? persist_read_int(KEY_HOURS_MINUTES_SEPARATOR) : 0;
   flag_dateFormat = persist_exists(KEY_DATE_FORMAT) ? persist_read_int(KEY_DATE_FORMAT) : 0;
+  flag_topRow = persist_exists(KEY_TOP_ROW) ? persist_read_int(KEY_TOP_ROW) : 0;
+  flag_bottomRow = persist_exists(KEY_BOTTOM_ROW) ? persist_read_int(KEY_BOTTOM_ROW) : 1;
+  flag_live_steps = persist_exists(KEY_LIVE_STEPS) ? persist_read_int(KEY_LIVE_STEPS) : 0;
   flag_bluetooth_alert = persist_exists(KEY_BLUETOOTH_ALERT) ? persist_read_int(KEY_BLUETOOTH_ALERT) : 0;
   flag_language = persist_exists(KEY_LANGUAGE) ? persist_read_int(KEY_LANGUAGE) : LANG_DEFAULT;
   flag_textColor = persist_exists(KEY_TEXT_COLOR) ? persist_read_int(KEY_TEXT_COLOR) : 0xFFFFFF;

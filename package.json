@@ -15,13 +15,16 @@
         "enableMultiJS": true,
         "messageKeys": {
             "KEY_BLUETOOTH_ALERT": 7,
+            "KEY_BOTTOM_ROW": 8,
             "KEY_DATE_FORMAT": 5,
             "KEY_HOURS_MINUTES_SEPARATOR": 4,
             "KEY_JSREADY": 2,
+            "KEY_LIVE_STEPS": 9,
             "KEY_BG_COLOR": 12,
             "KEY_LANGUAGE": 10,
             "KEY_TEXT_COLOR": 11,
             "KEY_TEMPERATURE_FORMAT": 3,
+            "KEY_TOP_ROW": 6,
             "KEY_WEATHER_CODE": 0,
             "KEY_WEATHER_TEMP": 1
         },
