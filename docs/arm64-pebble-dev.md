@@ -2,7 +2,7 @@
 
 Notes for building and smoke-testing Clean & Smart on **Linux aarch64** (e.g. WSL2 on Apple Silicon or ARM Windows). Verified on WSL2 Ubuntu arm64 with Pebble SDK **4.9.169** and `pebble-tool` **5.0.38**.
 
-For automated setup, run [`setup-phase0.sh`](setup-phase0.sh) from the repo root. This doc explains **why** some steps differ from x86 guides and what still does not work.
+Use this doc for **initial setup** on a fresh machine and as a reference for arm64-specific limitations.
 
 ---
 
@@ -16,6 +16,49 @@ For automated setup, run [`setup-phase0.sh`](setup-phase0.sh) from the repo root
 | **PKJS** in emulator (Clay settings, weather API) | No |
 | `rebble install --phone <ip>` on real hardware | Yes (PKJS runs on the phone) |
 | ImageMagick icon resize | Yes (after `apt install imagemagick`) |
+
+---
+
+## Fresh machine bootstrap
+
+Run from the repo root. Adjust paths if your clone lives elsewhere.
+
+```bash
+# System packages (sudo)
+sudo apt-get update
+sudo apt-get install -y libsdl2-2.0-0 libsndio7.0 imagemagick
+
+# uv + Python 3.13 venv
+curl -LsSf https://astral.sh/uv/install.sh | sh   # skip if uv already installed
+export PATH="$HOME/.local/bin:$PATH"
+uv python install 3.13
+uv python find 3.13 | xargs -I{} {} -m venv ~/.local/pebble-sdk-venv
+source ~/.local/pebble-sdk-venv/bin/activate
+pip install -U pip wheel
+
+# pebble-tool (install deps manually; omit pypkjs — stpyv8 does not build on arm64)
+pip download pebble-tool -d /tmp/pebble-dl --no-deps
+pip install /tmp/pebble-dl/pebble_tool-*.whl --no-deps
+pip install \
+  cobs colorama freetype-py google-auth google-auth-oauthlib httplib2 libpebble2 \
+  oauth2client packaging pillow progressbar2 pyasn1 pyasn1-modules pypng pyqrcode \
+  pyserial requests rsa six sourcemap websocket-client websockify wheel \
+  gevent cryptography numpy netaddr sh
+
+# pypkjs bridge (stub stpyv8 — see below)
+pip install docs/tools/stpyv8_arm_stub --no-deps
+pip install pypkjs --no-deps
+pip install peewee pygeoip python-dateutil backports.ssl-match-hostname gevent-websocket
+
+ln -sf ~/.local/pebble-sdk-venv/bin/pebble ~/.local/bin/pebble
+ln -sf ~/.local/pebble-sdk-venv/bin/pebble ~/.local/bin/rebble
+
+pebble sdk install latest
+npm install
+rebble build
+```
+
+If anything was created as root, fix ownership (see [File ownership](#file-ownership) below).
 
 ---
 
@@ -80,7 +123,7 @@ pip install pypkjs --no-deps
 pip install peewee pygeoip python-dateutil backports.ssl-match-hostname gevent-websocket
 ```
 
-The stub lives at [`docs/tools/stpyv8_arm_stub/`](tools/stpyv8_arm_stub/). [`setup-phase0.sh`](setup-phase0.sh) runs these steps automatically.
+The stub lives at [`docs/tools/stpyv8_arm_stub/`](tools/stpyv8_arm_stub/). The bootstrap block above installs it; or run the pip lines manually after activating the venv.
 
 **What the stub enables:** pypkjs starts, connects to QEMU, and **installs the `.pbw`**. Native watchface code runs in the emulator.
 
@@ -138,6 +181,5 @@ Use this for Clay settings and weather during Phase 2+ if emulator PKJS is requi
 
 | Path | Purpose |
 |---|---|
-| [`setup-phase0.sh`](setup-phase0.sh) | One-shot setup script |
 | [`docs/tools/stpyv8_arm_stub/`](tools/stpyv8_arm_stub/) | stpyv8 stub for arm64 |
 | [`configurable-display-rows.md`](configurable-display-rows.md) | Feature plan (Phase 0 checklist links here) |

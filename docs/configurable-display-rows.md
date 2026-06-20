@@ -24,17 +24,7 @@ Design and implementation plan for refactoring Clean & Smart watchface rows.
 
 Complete this **before** any feature code. Goal: a clean build of the **current** watchface on your machine.
 
-### Quick setup
-
-Automated script (apt step needs sudo password in your terminal):
-
-```bash
-bash docs/setup-phase0.sh
-```
-
-**arm64 / WSL2:** see [`arm64-pebble-dev.md`](arm64-pebble-dev.md) for pypkjs/stpyv8 workarounds, ownership fixes, and what works in the emulator vs on real hardware.
-
-Or follow the manual steps below.
+Setup guide: [`arm64-pebble-dev.md`](arm64-pebble-dev.md) (bootstrap, pypkjs/stpyv8 workarounds, emulator smoke test).
 
 ### Environment
 
