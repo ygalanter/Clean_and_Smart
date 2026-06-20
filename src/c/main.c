@@ -346,7 +346,11 @@ static void layout_step_row(TextLayer *text, BitmapLayer *icon, GRect full_frame
 
   int total_w = icon_w + STEP_ICON_GAP + content.w;
   int start_x = full_frame.origin.x + (full_frame.size.w - total_w) / 2;
-  int icon_y = full_frame.origin.y + (full_frame.size.h - icon_h) / 2;
+
+  // Match icon vertical center to rendered text block, not the full row frame
+  int text_y_offset = (full_frame.size.h - content.h) / 2;
+  int text_center_y = full_frame.origin.y + text_y_offset + content.h / 2;
+  int icon_y = text_center_y - icon_h / 2;
 
   layer_set_frame(bitmap_layer_get_layer(icon), GRect(start_x, icon_y, icon_w, icon_h));
   layer_set_hidden(bitmap_layer_get_layer(icon), false);

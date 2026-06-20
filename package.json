@@ -88,7 +88,7 @@
                     "type": "bitmap"
                 },
                 {
-                    "file": "images/icon_steps_20.png",
+                    "file": "images/icon_steps_19.png",
                     "name": "ICON_STEPS",
                     "targetPlatforms": [
                         "chalk"
@@ -96,7 +96,7 @@
                     "type": "bitmap"
                 },
                 {
-                    "file": "images/icon_steps_30.png",
+                    "file": "images/icon_steps_26.png",
                     "name": "ICON_STEPS",
                     "targetPlatforms": [
                         "aplite",
@@ -106,7 +106,7 @@
                     "type": "bitmap"
                 },
                 {
-                    "file": "images/icon_steps_41.png",
+                    "file": "images/icon_steps_35.png",
                     "name": "ICON_STEPS",
                     "targetPlatforms": [
                         "emery"
