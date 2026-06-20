@@ -13,8 +13,9 @@ Use this doc for **initial setup** on a fresh machine and as a reference for arm
 | `rebble build` → `.pbw` | Yes |
 | Emulator install (`rebble install --emulator basalt`) | Yes (with stub; see below) |
 | Watchface **C code** in emulator | Yes |
-| **PKJS** in emulator (Clay settings, weather API) | No |
+| **PKJS** in emulator (Clay settings, weather API) | No (local WSL); yes in [CloudPebble](#optional-cloudpebble-remix) |
 | `rebble install --phone <ip>` on real hardware | Yes (PKJS runs on the phone) |
+| **CloudPebble** (browser IDE + emulator + PKJS) | Yes — no local stpyv8 needed |
 | ImageMagick icon resize | Yes (after `apt install imagemagick`) |
 
 ---
@@ -175,7 +176,41 @@ Use this for Clay settings and weather during Phase 2+ if emulator PKJS is requi
 
 **Visual-only Clay preview (arm64):** PKJS does not run in the WSL emulator, but you can preview the settings **layout** in Chrome on Windows — see [Clay settings visual check](#clay-settings-visual-check) below.
 
+**Full PKJS in emulator (arm64):** use [CloudPebble](#optional-cloudpebble-remix) — same repo, browser build/emulator, no local stpyv8.
+
 **Alternative:** x86_64 Linux VM or Docker with a full Pebble SDK install (real stpyv8). Community images such as [ClusterM/pebble-dev-arm-linux](https://github.com/ClusterM/pebble-dev-arm-linux) document similar limitations on native arm64 and use containers for amd64.
+
+---
+
+## Optional: CloudPebble remix
+
+The [Rebble app store listing](https://apps.rebble.io) for Clean & Smart shows **“Remix on CloudPebble!”** — that is the original author’s one-click link to open the GitHub source in the browser IDE. Same project as this repo; CloudPebble is optional, not required.
+
+[CloudPebble](https://developer.repebble.com/sdk/cloud) is a browser-based Pebble IDE: edit, compile, emulate, and install without local `pebble-tool` or stpyv8. **PKJS and Clay settings work in the cloud emulator**, which local arm64 WSL does not provide.
+
+### When to use it
+
+| Use CloudPebble | Stay local (this doc) |
+|---|---|
+| Phase 2: full Clay settings + save flow in emulator | Primary C refactor, git, Cursor, Makefile/`rebble` |
+| Weather PKJS smoke test in emulator | Day-to-day builds and watchface layout |
+| No local SDK setup | Docs, scripts, upstream PR workflow |
+
+You can use **both**: develop C locally, push to GitHub, pull/build in CloudPebble for settings testing.
+
+### Import this fork
+
+1. Sign in at [cloudpebble.repebble.com](https://cloudpebble.repebble.com).
+2. Open the import URL for this fork:  
+   [cloudpebble.repebble.com/ide/import/github/yaronf/Clean_and_Smart](https://cloudpebble.repebble.com/ide/import/github/yaronf/Clean_and_Smart)
+3. Build → run the **basalt** emulator → open watchface **Settings** to test Clay.
+
+Upstream (original author):  
+[cloudpebble.repebble.com/ide/import/github/ygalanter/Clean_and_Smart](https://cloudpebble.repebble.com/ide/import/github/ygalanter/Clean_and_Smart)
+
+### Sync with local work
+
+After local commits, use CloudPebble’s **GitHub pull** (or re-import) before testing. After editing in CloudPebble, **push to GitHub** and `git pull` locally so the fork stays one source of truth.
 
 ---
 

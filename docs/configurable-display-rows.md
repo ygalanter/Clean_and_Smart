@@ -319,7 +319,7 @@ node docs/tools/clay-preview-url.js
 # open build/clay-preview.html in Windows Chrome
 ```
 
-Full save-to-watch testing still requires `rebble install --phone <ip>`.
+Full save-to-watch testing still requires `rebble install --phone <ip>` locally, or build/install from [CloudPebble](arm64-pebble-dev.md#optional-cloudpebble-remix) (full PKJS in the browser emulator).
 
 ---
 
