@@ -38,8 +38,7 @@ typedef enum {
   ROW_ABBR_DOW_DATE = 3,
 } RowDisplayMode;
 
-#define STEP_ICON_SIZE 18
-#define STEP_ICON_GAP 4
+#define STEP_ICON_GAP 8
 
 #define ROW_TEXT_BUF_SIZE 48
 #define ROW_DOW_ABBR_MAX 3
