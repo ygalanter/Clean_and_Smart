@@ -60,7 +60,7 @@
           { "label": "Day of week", "value": "0" },
           { "label": "Date", "value": "1" },
           { "label": "Step count", "value": "2" },
-          { "label": "Abbreviated day of week + date", "value": "3" }
+          { "label": "Short day + date", "value": "3" }
         ]
       },
       {
@@ -72,7 +72,7 @@
           { "label": "Day of week", "value": "0" },
           { "label": "Date", "value": "1" },
           { "label": "Step count", "value": "2" },
-          { "label": "Abbreviated day of week + date", "value": "3" }
+          { "label": "Short day + date", "value": "3" }
         ]
       },
       {
