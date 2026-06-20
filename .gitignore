@@ -1,3 +1,7 @@
 node_modules
 build
 *build
+
+# stpyv8 stub local pip install artifacts
+docs/tools/stpyv8_arm_stub/build/
+docs/tools/stpyv8_arm_stub/*.egg-info/

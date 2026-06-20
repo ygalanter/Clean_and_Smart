@@ -1,0 +1,143 @@
+# Pebble development on arm64 (WSL2)
+
+Notes for building and smoke-testing Clean & Smart on **Linux aarch64** (e.g. WSL2 on Apple Silicon or ARM Windows). Verified on WSL2 Ubuntu arm64 with Pebble SDK **4.9.169** and `pebble-tool` **5.0.38**.
+
+For automated setup, run [`setup-phase0.sh`](setup-phase0.sh) from the repo root. This doc explains **why** some steps differ from x86 guides and what still does not work.
+
+---
+
+## Quick reference
+
+| Task | Works on arm64? |
+|---|---|
+| `rebble build` → `.pbw` | Yes |
+| Emulator install (`rebble install --emulator basalt`) | Yes (with stub; see below) |
+| Watchface **C code** in emulator | Yes |
+| **PKJS** in emulator (Clay settings, weather API) | No |
+| `rebble install --phone <ip>` on real hardware | Yes (PKJS runs on the phone) |
+| ImageMagick icon resize | Yes (after `apt install imagemagick`) |
+
+---
+
+## Environment choices
+
+### Python 3.13 via `uv`
+
+System Python may be too new (e.g. 3.14) for a full `pebble-tool` install. Use a dedicated venv:
+
+- **Venv:** `~/.local/pebble-sdk-venv`
+- **CLI symlinks:** `~/.local/bin/pebble` and `~/.local/bin/rebble` (Makefile uses `rebble`)
+
+Ensure `~/.local/bin` is on your `PATH` (usually via `~/.bashrc`).
+
+### System packages (sudo)
+
+Required for the SDL emulator window and Phase 1 asset work:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y libsdl2-2.0-0 libsndio7.0 imagemagick
+```
+
+Builds compile without these; the emulator needs SDL.
+
+### File ownership
+
+If setup was ever run as root, fix ownership before using `pebble`/`rebble`:
+
+```bash
+sudo chown -R "$USER:$USER" \
+  ~/misc/pt2-watchfaces/Clean_and_Smart \
+  ~/.local/pebble-sdk-venv \
+  ~/.local/share/pebble-sdk
+```
+
+Symptoms of wrong ownership: `Permission denied` on `~/.local/share/pebble-sdk/settings.json` or `pending_analytics.json`.
+
+---
+
+## The pypkjs / stpyv8 problem
+
+`rebble install --emulator` needs **pypkjs** — a Python process that bridges the Pebble tool to the QEMU emulator. pypkjs depends on **stpyv8** (Google V8 bindings), which **does not build on aarch64**.
+
+### Symptom
+
+```
+Couldn't launch pypkjs:
+.../python3.13: No module named pypkjs
+```
+
+Or, if pypkjs is missing entirely: the emulator window opens but shows **“install an app to continue”** and install exits with an error.
+
+### Workaround (used in this repo)
+
+Install a **stub** package that satisfies the `stpyv8` import without providing a JS engine, then install `pypkjs` without pulling the real stpyv8 build:
+
+```bash
+source ~/.local/pebble-sdk-venv/bin/activate
+pip install docs/tools/stpyv8_arm_stub --no-deps
+pip install pypkjs --no-deps
+pip install peewee pygeoip python-dateutil backports.ssl-match-hostname gevent-websocket
+```
+
+The stub lives at [`docs/tools/stpyv8_arm_stub/`](tools/stpyv8_arm_stub/). [`setup-phase0.sh`](setup-phase0.sh) runs these steps automatically.
+
+**What the stub enables:** pypkjs starts, connects to QEMU, and **installs the `.pbw`**. Native watchface code runs in the emulator.
+
+**What the stub does not enable:** executing PKJS (JavaScript). When the watch asks for phone-side JS, V8 is unavailable. Expect:
+
+- No Clay settings page in the emulator
+- No weather fetch via PKJS in the emulator
+- Possible log noise if the app expects JS ready handshake (usually non-fatal for display smoke tests)
+
+This is sufficient for verifying layout, fonts, and C-side logic before feature work.
+
+---
+
+## Emulator smoke test
+
+From the repo root:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+rebble build
+rebble kill --force          # clear stale QEMU/pypkjs from a failed attempt
+rebble install --emulator basalt
+```
+
+You should see **Clean & Smart** in the SDL window: day name, time, date. Weather may be absent — that is expected on arm64.
+
+Other platforms: `aplite`, `chalk`, `diorite`, `emery` (see `Makefile` targets).
+
+### Stale emulator processes
+
+If install behaves oddly, kill everything and retry:
+
+```bash
+rebble kill --force
+# or manually: pkill -f qemu-pebble
+```
+
+---
+
+## Testing PKJS and settings
+
+PKJS **does** run on a real phone when you install over the developer connection:
+
+```bash
+rebble install --phone <phone-ip>
+```
+
+Use this for Clay settings and weather during Phase 2+ if emulator PKJS is required.
+
+**Alternative:** x86_64 Linux VM or Docker with a full Pebble SDK install (real stpyv8). Community images such as [ClusterM/pebble-dev-arm-linux](https://github.com/ClusterM/pebble-dev-arm-linux) document similar limitations on native arm64 and use containers for amd64.
+
+---
+
+## Related files
+
+| Path | Purpose |
+|---|---|
+| [`setup-phase0.sh`](setup-phase0.sh) | One-shot setup script |
+| [`docs/tools/stpyv8_arm_stub/`](tools/stpyv8_arm_stub/) | stpyv8 stub for arm64 |
+| [`configurable-display-rows.md`](configurable-display-rows.md) | Feature plan (Phase 0 checklist links here) |
