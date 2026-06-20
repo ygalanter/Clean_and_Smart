@@ -32,3 +32,25 @@ char LANG_MONTH[][12][6] = {
     {"jan", "Feb", "Mar", "Apr", "Mei", "jun", "jul", "Ogs", "Sep", "okt", "nov", "dis"},
     {"Sty", "Lut", "Mar", "Kwi", "Maj", "Cze", "Lip", "Sie", "Wrz", "Paž", "Lis", "Gru"},
     {"Jan", "Feb", "Már", "Ápr", "Máj", "Jún", "Júl", "Aug", "Sze", "Okt", "Nov", "Dec"}};
+
+char LANG_DAY_ABBR[][7][4] = {
+    {"SÖN", "MÅN", "TIS", "ONS", "TOR", "FRE", "LÖR"},
+    {"DOM", "LUN", "MAR", "MER", "GIO", "VEN", "SAB"},
+    {"ВС", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"},
+    {"ZON", "MAA", "DIN", "WOE", "DON", "VRI", "ZAT"},
+    {"SØN", "MAN", "TIR", "ONS", "TOR", "FRE", "LØR"},
+    {"DIU", "DIL", "DIM", "DMC", "DIJ", "DIV", "DIS"},
+    {"AHA", "ISN", "SEL", "RAB", "KHA", "JUM", "SAB"},
+    {"NIE", "PON", "WTO", "SRO", "CZW", "PIA", "SOB"},
+    {"VAS", "HÉT", "KED", "SZE", "CSÜ", "PÉN", "SZO"}};
+
+char LANG_MONTH_UPPER[][12][6] = {
+    {"JAN", "FEB", "MAR", "APR", "MAJ", "JUN", "JUL", "AUG", "SEP", "OKT", "NOV", "DEC"},
+    {"GEN", "FEB", "MAR", "APR", "MAG", "GIU", "LUG", "AGO", "SET", "OTT", "NOV", "DIC"},
+    {"ЯНВ", "ФЕВ", "МАР", "АПР", "МАЯ", "ИЮН", "ИЮЛ", "АВГ", "СЕН", "ОКТ", "НОЯ", "ДЕК"},
+    {"JAN", "FEB", "MAA", "APR", "MEI", "JUN", "JUL", "AUG", "SEP", "OKT", "NOV", "DEC"},
+    {"JAN", "FEB", "MAR", "APR", "MAI", "JUN", "JUL", "AUG", "SEP", "OKT", "NOV", "DES"},
+    {"GEN", "FEB", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OCT", "NOV", "DES"},
+    {"JAN", "FEB", "MAR", "APR", "MEI", "JUN", "JUL", "OGS", "SEP", "OKT", "NOV", "DIS"},
+    {"STY", "LUT", "MAR", "KWI", "MAJ", "CZE", "LIP", "SIE", "WRZ", "PAZ", "LIS", "GRU"},
+    {"JAN", "FEB", "MAR", "APR", "MAJ", "JUN", "JUL", "AUG", "SZE", "OKT", "NOV", "DEC"}};

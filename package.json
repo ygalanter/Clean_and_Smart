@@ -9,7 +9,8 @@
     "pebble": {
         "capabilities": [
             "location",
-            "configurable"
+            "configurable",
+            "health"
         ],
         "displayName": "Clean&Smart",
         "enableMultiJS": true,
@@ -149,5 +150,5 @@
             "watchface": true
         }
     },
-    "version": "2.50.0"
+    "version": "2.51.0"
 }

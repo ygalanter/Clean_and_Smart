@@ -1,4 +1,5 @@
 #include <pebble.h>
+#include <ctype.h>
 #include "main.h"
 #include <pebble-effect-layer/pebble-effect-layer.h>
 #include "languages.h"
@@ -6,16 +7,16 @@
 Window *my_window;
 Layer *window_layer;
 
-TextLayer *text_time, *text_date, *text_dow, *text_battery, *text_temp;
+TextLayer *text_time, *text_row_top, *text_row_bottom, *text_battery, *text_temp;
 Layer *graphics_layer;
-BitmapLayer *temp_layer;
-GBitmap *meteoicons_all, *meteoicon_current;
+BitmapLayer *temp_layer, *step_icon_top, *step_icon_bottom;
+GBitmap *meteoicons_all, *meteoicon_current, *steps_icon_bitmap;
 
 GFont bn_69, bn_30, bn_26, bn_20, bn_19;
 
-char s_date[] = "21  FEB  2015     "; // test
-char s_time[] = "88.44mm";            // test
-char s_dow[] = "WEDNESDAY     ";      // test
+char s_row_top[ROW_TEXT_BUF_SIZE];
+char s_row_bottom[ROW_TEXT_BUF_SIZE];
+char s_time[] = "88.44mm";
 char s_battery[] = "100%";            // test
 char s_temp[] = "-100°";
 
@@ -28,6 +29,8 @@ bool flag_messaging_is_busy = false, flag_js_is_ready = false;
 
 GRect bounds;
 GPoint center;
+GRect row_top_frame, row_bottom_frame;
+GTextAlignment row_bottom_text_align;
 
 static GRect get_time_frame()
 {
@@ -142,6 +145,314 @@ static void tint_meteoicon() {
   layer_mark_dirty(bitmap_layer_get_layer(temp_layer));
 }
 
+// tint footsteps icon to match KEY_TEXT_COLOR
+static void tint_step_icon(void)
+{
+  if (!steps_icon_bitmap) return;
+
+  GColor *palette = gbitmap_get_palette(steps_icon_bitmap);
+  if (!palette) return;
+
+  int num_colors;
+  switch (gbitmap_get_format(steps_icon_bitmap))
+  {
+    case GBitmapFormat1BitPalette: num_colors = 2; break;
+    case GBitmapFormat2BitPalette: num_colors = 4; break;
+    case GBitmapFormat4BitPalette: num_colors = 16; break;
+    default: return;
+  }
+
+  GColor new_color = GColorFromHEX(flag_textColor);
+  for (int i = 0; i < num_colors; i++)
+  {
+    if (!gcolor_equal(palette[i], GColorClear))
+    {
+      palette[i] = new_color;
+    }
+  }
+  if (step_icon_top) layer_mark_dirty(bitmap_layer_get_layer(step_icon_top));
+  if (step_icon_bottom) layer_mark_dirty(bitmap_layer_get_layer(step_icon_bottom));
+}
+
+// configurable top/bottom rows (flag_topRow / flag_bottomRow); center time row unchanged
+static void format_full_date(char *buf, size_t len, struct tm *tick_time)
+{
+  switch (flag_dateFormat)
+  {
+  case 0:
+    if (flag_language == LANG_RUSSIAN || flag_language == LANG_POLISH)
+    {
+      strftime(buf, len, "%b   -%d-%Y", tick_time);
+      strncpy(&buf[0], LANG_MONTH[flag_language][tick_time->tm_mon], 6);
+    }
+    else
+    {
+      strftime(buf, len, "%b-%d-%Y", tick_time);
+      if (flag_language != LANG_DEFAULT)
+      {
+        strncpy(&buf[0], LANG_MONTH[flag_language][tick_time->tm_mon], 3);
+      }
+    }
+    break;
+  case 1:
+    if (flag_language == LANG_RUSSIAN)
+    {
+      strftime(buf, len, "%d-%b   -%Y", tick_time);
+      strncpy(&buf[3], LANG_MONTH[flag_language][tick_time->tm_mon], 6);
+    }
+    else
+    {
+      strftime(buf, len, "%d-%b-%Y", tick_time);
+      if (flag_language != LANG_DEFAULT)
+      {
+        strncpy(&buf[3], LANG_MONTH[flag_language][tick_time->tm_mon], 3);
+      }
+    }
+    break;
+  case 2:
+    strftime(buf, len, "%Y-%m-%d", tick_time);
+    break;
+  }
+}
+
+static void format_full_dow(char *buf, size_t len, struct tm *tick_time)
+{
+  if (len == 0) return;
+
+  if (flag_language != LANG_DEFAULT)
+  {
+    strncpy(buf, LANG_DAY[flag_language][tick_time->tm_wday], len - 1);
+  }
+  else
+  {
+    strftime(buf, len, "%A", tick_time);
+  }
+  buf[len - 1] = '\0';
+}
+
+static void get_abbr_dow(char *buf, size_t len, struct tm *tick_time)
+{
+  if (len == 0) return;
+
+  if (flag_language != LANG_DEFAULT)
+  {
+    strncpy(buf, LANG_DAY_ABBR[flag_language][tick_time->tm_wday], len - 1);
+  }
+  else
+  {
+    strftime(buf, len, "%a", tick_time);
+    for (char *p = buf; *p; p++)
+    {
+      *p = toupper((unsigned char)*p);
+    }
+  }
+  buf[len - 1] = '\0';
+}
+
+static void get_abbr_month(char *buf, size_t len, struct tm *tick_time)
+{
+  if (len == 0) return;
+
+  if (flag_language != LANG_DEFAULT)
+  {
+    strncpy(buf, LANG_MONTH_UPPER[flag_language][tick_time->tm_mon], len - 1);
+  }
+  else
+  {
+    strftime(buf, len, "%b", tick_time);
+    for (char *p = buf; *p; p++)
+    {
+      *p = toupper((unsigned char)*p);
+    }
+  }
+  buf[len - 1] = '\0';
+}
+
+// mode 3: abbreviated DOW + abbreviated date, ordered by KEY_DATE_FORMAT
+static void format_abbr_dow_date(char *buf, size_t len, struct tm *tick_time)
+{
+  char dow[ROW_DOW_ABBR_MAX + 1];
+  char mon[ROW_MONTH_ABBR_MAX + 1];
+  const int year = tick_time->tm_year + 1900;
+
+  get_abbr_dow(dow, sizeof(dow), tick_time);
+  get_abbr_month(mon, sizeof(mon), tick_time);
+
+  switch (flag_dateFormat)
+  {
+  case 0:
+    snprintf(buf, ROW_TEXT_BUF_SIZE, "%.*s %.*s-%02d-%04d",
+             ROW_DOW_ABBR_MAX, dow, ROW_MONTH_ABBR_MAX, mon, tick_time->tm_mday, year);
+    break;
+  case 1:
+    snprintf(buf, ROW_TEXT_BUF_SIZE, "%.*s %02d-%.*s-%04d",
+             ROW_DOW_ABBR_MAX, dow, tick_time->tm_mday, ROW_MONTH_ABBR_MAX, mon, year);
+    break;
+  case 2:
+    snprintf(buf, ROW_TEXT_BUF_SIZE, "%.*s %04d-%02d-%02d",
+             ROW_DOW_ABBR_MAX, dow, year, tick_time->tm_mon + 1, tick_time->tm_mday);
+    break;
+  }
+  if (len < ROW_TEXT_BUF_SIZE)
+  {
+    buf[len - 1] = '\0';
+  }
+}
+
+// step count from Health API; "--" if unavailable (aplite / no permission), "!!!" if >99999
+static void format_steps(char *buf, size_t len)
+{
+#if defined(PBL_HEALTH)
+  time_t now = time(NULL);
+  HealthServiceAccessibilityMask mask = health_service_metric_accessible(
+      HealthMetricStepCount, now - SECONDS_PER_DAY, now);
+  if (!(mask & HealthServiceAccessibilityMaskAvailable))
+  {
+    strncpy(buf, "--", ROW_TEXT_BUF_SIZE);
+    if (len < ROW_TEXT_BUF_SIZE)
+    {
+      buf[len - 1] = '\0';
+    }
+    return;
+  }
+
+  HealthValue steps = health_service_sum_today(HealthMetricStepCount);
+  if (steps > 99999)
+  {
+    strncpy(buf, "!!!", ROW_TEXT_BUF_SIZE);
+  }
+  else
+  {
+    snprintf(buf, ROW_TEXT_BUF_SIZE, "%u", (unsigned int)steps);
+  }
+  if (len < ROW_TEXT_BUF_SIZE)
+  {
+    buf[len - 1] = '\0';
+  }
+#else
+  strncpy(buf, "--", ROW_TEXT_BUF_SIZE);
+  if (len < ROW_TEXT_BUF_SIZE)
+  {
+    buf[len - 1] = '\0';
+  }
+#endif
+}
+
+// step row: icon + gap + text, centered as one group within the row bounds
+static void layout_step_row(TextLayer *text, BitmapLayer *icon, GRect full_frame, const char *text_str)
+{
+  text_layer_set_text(text, text_str);
+  text_layer_set_text_alignment(text, GTextAlignmentLeft);
+
+  GSize content = text_layer_get_content_size(text);
+  int total_w = STEP_ICON_SIZE + STEP_ICON_GAP + content.w;
+  int start_x = full_frame.origin.x + (full_frame.size.w - total_w) / 2;
+  int icon_y = full_frame.origin.y + (full_frame.size.h - STEP_ICON_SIZE) / 2;
+
+  layer_set_frame(bitmap_layer_get_layer(icon),
+                  GRect(start_x, icon_y, STEP_ICON_SIZE, STEP_ICON_SIZE));
+  layer_set_hidden(bitmap_layer_get_layer(icon), false);
+
+  layer_set_frame(text_layer_get_layer(text),
+                  GRect(start_x + STEP_ICON_SIZE + STEP_ICON_GAP, full_frame.origin.y,
+                        content.w, full_frame.size.h));
+}
+
+static void layout_text_row(TextLayer *text, BitmapLayer *icon, GRect full_frame,
+                            GTextAlignment align, const char *text_str)
+{
+  layer_set_hidden(bitmap_layer_get_layer(icon), true);
+  layer_set_frame(text_layer_get_layer(text), full_frame);
+  text_layer_set_text_alignment(text, align);
+  text_layer_set_text(text, text_str);
+}
+
+static void update_row(TextLayer *text, BitmapLayer *icon, GRect full_frame,
+                       GTextAlignment text_align, RowDisplayMode mode, struct tm *tick_time,
+                       char *buf, size_t buf_len)
+{
+  switch (mode)
+  {
+  case ROW_FULL_DOW:
+    format_full_dow(buf, buf_len, tick_time);
+    layout_text_row(text, icon, full_frame, text_align, buf);
+    break;
+  case ROW_FULL_DATE:
+    format_full_date(buf, buf_len, tick_time);
+    layout_text_row(text, icon, full_frame, text_align, buf);
+    break;
+  case ROW_STEPS:
+    format_steps(buf, buf_len);
+    layout_step_row(text, icon, full_frame, buf);
+    break;
+  case ROW_ABBR_DOW_DATE:
+    format_abbr_dow_date(buf, buf_len, tick_time);
+    layout_text_row(text, icon, full_frame, text_align, buf);
+    break;
+  }
+}
+
+// step rows only — used on MINUTE_UNIT tick and from health/focus handlers
+static void refresh_steps_rows(void)
+{
+  time_t now = time(NULL);
+  struct tm *t = localtime(&now);
+
+  if (flag_topRow == ROW_STEPS)
+  {
+    update_row(text_row_top, step_icon_top, row_top_frame, GTextAlignmentCenter,
+               ROW_STEPS, t, s_row_top, ROW_TEXT_BUF_SIZE);
+  }
+  if (flag_bottomRow == ROW_STEPS)
+  {
+    update_row(text_row_bottom, step_icon_bottom, row_bottom_frame, row_bottom_text_align,
+               ROW_STEPS, t, s_row_bottom, ROW_TEXT_BUF_SIZE);
+  }
+}
+
+// called from tick_handler — DAY_UNIT for text rows + midnight step reset; MINUTE_UNIT for step ticks
+static void refresh_rows(struct tm *tick_time, TimeUnits units_changed)
+{
+  if (units_changed & DAY_UNIT)
+  {
+    if (flag_topRow != ROW_STEPS)
+    {
+      update_row(text_row_top, step_icon_top, row_top_frame, GTextAlignmentCenter,
+                 (RowDisplayMode)flag_topRow, tick_time, s_row_top, ROW_TEXT_BUF_SIZE);
+    }
+    if (flag_bottomRow != ROW_STEPS)
+    {
+      update_row(text_row_bottom, step_icon_bottom, row_bottom_frame, row_bottom_text_align,
+                 (RowDisplayMode)flag_bottomRow, tick_time, s_row_bottom, ROW_TEXT_BUF_SIZE);
+    }
+    // step count resets at midnight — refresh even though steps normally tick on MINUTE_UNIT
+    refresh_steps_rows();
+  }
+
+  if (units_changed & MINUTE_UNIT)
+  {
+    refresh_steps_rows();
+  }
+}
+
+#if defined(PBL_HEALTH)
+// SignificantUpdate always; MovementUpdate only when KEY_LIVE_STEPS is on
+static void health_handler(HealthEventType event, void *context)
+{
+  bool has_step_row = (flag_topRow == ROW_STEPS || flag_bottomRow == ROW_STEPS);
+  if (!has_step_row) return;
+
+  if (event == HealthEventSignificantUpdate)
+  {
+    refresh_steps_rows();
+  }
+  else if (event == HealthEventMovementUpdate && flag_live_steps)
+  {
+    refresh_steps_rows();
+  }
+}
+#endif
+
 // handling time
 void tick_handler(struct tm *tick_time, TimeUnits units_changed)
 {
@@ -184,58 +495,13 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed)
   }
 
   if (units_changed & DAY_UNIT)
-  { // on day change - change date (format depends on flag)
+  { // on day change - refresh DOW, date, abbr rows, and step count (midnight reset)
+    refresh_rows(tick_time, DAY_UNIT);
+  }
 
-    switch (flag_dateFormat)
-    {
-    case 0:
-      if (flag_language == LANG_RUSSIAN || flag_language == LANG_POLISH)
-      {                                                             // if this is Russian - need double bytes
-        strftime(s_date, sizeof(s_date), "%b   -%d-%Y", tick_time); // "DEC 10 2015"
-        strncpy(&s_date[0], LANG_MONTH[flag_language][tick_time->tm_mon], 6);
-      }
-      else
-      {
-        strftime(s_date, sizeof(s_date), "%b-%d-%Y", tick_time); // "DEC 10 2015"
-        if (flag_language != LANG_DEFAULT)
-        { // if custom language is set - pull from language array
-          strncpy(&s_date[0], LANG_MONTH[flag_language][tick_time->tm_mon], 3);
-        }
-      }
-
-      break;
-    case 1:
-      if (flag_language == LANG_RUSSIAN)
-      {                                                             // if this is Russian - need double bytes
-        strftime(s_date, sizeof(s_date), "%d-%b   -%Y", tick_time); // "DEC 10 2015"
-        strncpy(&s_date[3], LANG_MONTH[flag_language][tick_time->tm_mon], 6);
-      }
-      else
-      {
-        strftime(s_date, sizeof(s_date), "%d-%b-%Y", tick_time); // "DEC 10 2015"
-        if (flag_language != LANG_DEFAULT)
-        { // if custom language is set - pull from language array
-          strncpy(&s_date[3], LANG_MONTH[flag_language][tick_time->tm_mon], 3);
-        }
-      }
-
-      break;
-    case 2:
-      strftime(s_date, sizeof(s_date), "%Y-%m-%d", tick_time); // "2015-12-10"
-      break;
-    }
-
-    text_layer_set_text(text_date, s_date);
-
-    if (flag_language != LANG_DEFAULT)
-    { // if custom language is set - pull from language array
-      text_layer_set_text(text_dow, LANG_DAY[flag_language][tick_time->tm_wday]);
-    }
-    else
-    {
-      strftime(s_dow, sizeof(s_dow), "%A", tick_time);
-      text_layer_set_text(text_dow, s_dow);
-    }
+  if (units_changed & MINUTE_UNIT)
+  { // on minute change - refresh step rows (live steps also via health events)
+    refresh_rows(tick_time, MINUTE_UNIT);
   }
 }
 
@@ -365,11 +631,12 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
         persist_write_int(KEY_TEXT_COLOR, t->value->int32);
         flag_textColor = t->value->int32;
         tint_meteoicon();
-        text_layer_set_text_color(text_time,    GColorFromHEX(flag_textColor));
-        text_layer_set_text_color(text_date,    GColorFromHEX(flag_textColor));
-        text_layer_set_text_color(text_dow,     GColorFromHEX(flag_textColor));
-        text_layer_set_text_color(text_battery, GColorFromHEX(flag_textColor));
-        text_layer_set_text_color(text_temp,    GColorFromHEX(flag_textColor));
+        tint_step_icon();
+        text_layer_set_text_color(text_time,        GColorFromHEX(flag_textColor));
+        text_layer_set_text_color(text_row_top,     GColorFromHEX(flag_textColor));
+        text_layer_set_text_color(text_row_bottom,  GColorFromHEX(flag_textColor));
+        text_layer_set_text_color(text_battery,     GColorFromHEX(flag_textColor));
+        text_layer_set_text_color(text_temp,        GColorFromHEX(flag_textColor));
       }
       break;
     case KEY_BG_COLOR:
@@ -385,6 +652,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       {
         persist_write_int(KEY_TOP_ROW, t->value->int32);
         flag_topRow = t->value->int32;
+        need_time = 1;
       }
       break;
     case KEY_BOTTOM_ROW:
@@ -392,6 +660,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       {
         persist_write_int(KEY_BOTTOM_ROW, t->value->int32);
         flag_bottomRow = t->value->int32;
+        need_time = 1;
       }
       break;
     case KEY_LIVE_STEPS:
@@ -583,6 +852,18 @@ static void battery_handler(BatteryChargeState state)
 #endif
 }
 
+// watchface regains focus after notification — refresh without re-running handle_init()
+static void app_focus_did_change(bool in_focus)
+{
+  if (!in_focus) return;
+
+  time_t now = time(NULL);
+  struct tm *t = localtime(&now);
+  tick_handler(t, MINUTE_UNIT | DAY_UNIT);
+  battery_handler(battery_state_service_peek());
+  layer_mark_dirty(window_layer);
+}
+
 // adjusting time location when timeline quickview shows.
 void unobstructed_changed(AnimationProgress progress, void *context)
 {
@@ -597,7 +878,6 @@ void unobstructed_did_change(void *context)
 void handle_init(void)
 {
 
-  //   // need to catch when app resumes focus after notification, otherwise effect layer won't restore
   //   app_focus_service_subscribe_handlers((AppFocusHandlers){
   //     .did_focus = app_focus_changed,
   //     .will_focus = app_focus_changing
@@ -640,10 +920,29 @@ void handle_init(void)
 
   load_fonts();
 
+  // step icon layers (hidden unless that row is in step mode)
+  steps_icon_bitmap = gbitmap_create_with_resource(RESOURCE_ID_ICON_STEPS);
+  tint_step_icon();
+
+  step_icon_top = bitmap_layer_create(GRect(0, 0, STEP_ICON_SIZE, STEP_ICON_SIZE));
+  bitmap_layer_set_bitmap(step_icon_top, steps_icon_bitmap);
+  bitmap_layer_set_compositing_mode(step_icon_top, GCompOpSet);
+  layer_set_hidden(bitmap_layer_get_layer(step_icon_top), true);
+  layer_add_child(window_layer, bitmap_layer_get_layer(step_icon_top));
+
+  step_icon_bottom = bitmap_layer_create(GRect(0, 0, STEP_ICON_SIZE, STEP_ICON_SIZE));
+  bitmap_layer_set_bitmap(step_icon_bottom, steps_icon_bitmap);
+  bitmap_layer_set_compositing_mode(step_icon_bottom, GCompOpSet);
+  layer_set_hidden(bitmap_layer_get_layer(step_icon_bottom), true);
+  layer_add_child(window_layer, bitmap_layer_get_layer(step_icon_bottom));
+
 #ifdef PBL_RECT
-  text_dow = create_text_layer(GRect(0, 30 * PBL_DISPLAY_HEIGHT / 168, bounds.size.w, 31 * PBL_DISPLAY_HEIGHT / 168), bn_30, GTextAlignmentCenter);
+  row_top_frame = GRect(0, 30 * PBL_DISPLAY_HEIGHT / 168, bounds.size.w, 31 * PBL_DISPLAY_HEIGHT / 168);
+  row_bottom_text_align = GTextAlignmentCenter;
+  text_row_top = create_text_layer(row_top_frame, bn_30, GTextAlignmentCenter);
   text_time = create_text_layer(get_time_frame(), bn_69, GTextAlignmentCenter);
-  text_date = create_text_layer(GRect(0, 129 * PBL_DISPLAY_HEIGHT / 168, bounds.size.w, 27 * PBL_DISPLAY_HEIGHT / 168), bn_26, GTextAlignmentCenter);
+  row_bottom_frame = GRect(0, 129 * PBL_DISPLAY_HEIGHT / 168, bounds.size.w, 27 * PBL_DISPLAY_HEIGHT / 168);
+  text_row_bottom = create_text_layer(row_bottom_frame, bn_26, GTextAlignmentCenter);
   text_battery = create_text_layer(GRect(PBL_DISPLAY_WIDTH - 46 * PBL_DISPLAY_WIDTH / 144, 0, 43 * PBL_DISPLAY_WIDTH / 144, 21 * PBL_DISPLAY_HEIGHT / 168), bn_19, GTextAlignmentRight);
   text_temp = create_text_layer(GRect(3, 0, 80 * PBL_DISPLAY_WIDTH / 144, 21 * PBL_DISPLAY_HEIGHT / 168), bn_19, GTextAlignmentLeft);
 
@@ -657,9 +956,12 @@ void handle_init(void)
   layer_add_child(window_layer, effect_layer_get_layer(zoom_layer_meteoicon));
   #endif
 #else
-  text_dow = create_text_layer(GRect(0, 23, bounds.size.w, 31), bn_20, GTextAlignmentCenter);
+  row_top_frame = GRect(0, 23, bounds.size.w, 31);
+  row_bottom_text_align = GTextAlignmentLeft;
+  text_row_top = create_text_layer(row_top_frame, bn_20, GTextAlignmentCenter);
   text_time = create_text_layer(get_time_frame(), bn_69, GTextAlignmentCenter);
-  text_date = create_text_layer(GRect(35, 111, 80, 27), bn_19, GTextAlignmentLeft);
+  row_bottom_frame = GRect(35, 111, 80, 27);
+  text_row_bottom = create_text_layer(row_bottom_frame, bn_19, GTextAlignmentLeft);
   text_battery = create_text_layer(GRect(108, 111, 40, 21), bn_19, GTextAlignmentRight);
   text_temp = create_text_layer(GRect(48, 136, 41, 20), bn_19, GTextAlignmentRight);
 #endif
@@ -697,6 +999,15 @@ void handle_init(void)
 
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
 
+#if defined(PBL_HEALTH)
+  // requires "health" in package.json capabilities
+  health_service_events_subscribe(health_handler, NULL);
+#endif
+
+  app_focus_service_subscribe_handlers((AppFocusHandlers){
+    .did_focus = app_focus_did_change,
+  });
+
   // Get a time structure so that the face doesn't start blank
   time_t temp = time(NULL);
   struct tm *t = localtime(&temp);
@@ -709,12 +1020,15 @@ void handle_deinit(void)
 {
 
   // clearning MASK
-  text_layer_destroy(text_date);
+  text_layer_destroy(text_row_bottom);
   text_layer_destroy(text_time);
-  text_layer_destroy(text_dow);
+  text_layer_destroy(text_row_top);
   text_layer_destroy(text_battery);
   text_layer_destroy(text_temp);
 
+  bitmap_layer_destroy(step_icon_top);
+  bitmap_layer_destroy(step_icon_bottom);
+  gbitmap_destroy(steps_icon_bitmap);
   gbitmap_destroy(meteoicons_all);
   gbitmap_destroy(meteoicon_current);
   bitmap_layer_destroy(temp_layer);
@@ -727,7 +1041,10 @@ void handle_deinit(void)
   battery_state_service_unsubscribe();
   bluetooth_connection_service_unsubscribe();
   unobstructed_area_service_unsubscribe();
-  //   app_focus_service_unsubscribe();
+#if defined(PBL_HEALTH)
+  health_service_events_unsubscribe();
+#endif
+  app_focus_service_unsubscribe();
 }
 
 int main(void)

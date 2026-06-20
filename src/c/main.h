@@ -31,6 +31,20 @@
 #define BLUETOOTH_ALERT_STRONG 4
 #define BLUETOOTH_ALERT_DOUBLE 5
 
+typedef enum {
+  ROW_FULL_DOW = 0,
+  ROW_FULL_DATE = 1,
+  ROW_STEPS = 2,
+  ROW_ABBR_DOW_DATE = 3,
+} RowDisplayMode;
+
+#define STEP_ICON_SIZE 18
+#define STEP_ICON_GAP 4
+
+#define ROW_TEXT_BUF_SIZE 48
+#define ROW_DOW_ABBR_MAX 3
+#define ROW_MONTH_ABBR_MAX 6
+
 // define macro comparing PBL_DISPLAY_HEIGHT with 168
 #ifdef PBL_RECT
 #if PBL_DISPLAY_HEIGHT == 168

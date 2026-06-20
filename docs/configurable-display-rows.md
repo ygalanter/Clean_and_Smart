@@ -2,7 +2,7 @@
 
 Design and implementation plan for refactoring Clean & Smart watchface rows.
 
-**Status:** Phase 2 complete. Phase 3+ not started.
+**Status:** Phase 3 complete. Phase 4 (testing) not started.
 
 **Build system:** `rebble` is a symlink to `pebble` in `~/.local/bin` (Makefile unchanged).
 
@@ -15,7 +15,7 @@ Design and implementation plan for refactoring Clean & Smart watchface rows.
 | **0** | [Dev environment & tooling](#phase-0-dev-environment--tooling) | yes |
 | **1** | [Assets](#phase-1-assets) — step icon PNG | yes |
 | **2** | [Settings plumbing](#settings--persistence) — message keys, Clay, PKJS | yes |
-| **3** | [Core C refactor](#architecture) — rows, formatters, health, focus | |
+| **3** | [Core C refactor](#architecture) — rows, formatters, health, focus | yes |
 | **4** | [Testing](#testing-checklist) | |
 
 ---
