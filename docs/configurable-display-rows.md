@@ -2,7 +2,7 @@
 
 Design and implementation plan for refactoring Clean & Smart watchface rows.
 
-**Status:** Phase 0 complete (build verified). Feature work not started.
+**Status:** Phase 1 complete. Phase 2+ not started.
 
 **Build system:** `rebble` is a symlink to `pebble` in `~/.local/bin` (Makefile unchanged).
 
@@ -13,7 +13,7 @@ Design and implementation plan for refactoring Clean & Smart watchface rows.
 | Phase | What | Done |
 |---|---|---|
 | **0** | [Dev environment & tooling](#phase-0-dev-environment--tooling) | yes |
-| **1** | [Assets](#phase-1-assets) — step icon PNG | |
+| **1** | [Assets](#phase-1-assets) — step icon PNG | yes |
 | **2** | [Settings plumbing](#settings--persistence) — message keys, Clay, PKJS | |
 | **3** | [Core C refactor](#architecture) — rows, formatters, health, focus | |
 | **4** | [Testing](#testing-checklist) | |
@@ -98,15 +98,19 @@ rebble install --emulator basalt
 
 ## Phase 1: Assets
 
-### Step icon (approved design)
+**Done.** `resources/images/icon_steps.png` (18×18, 1-bit-style silhouette with alpha) registered as `ICON_STEPS` in `package.json`. Wired in C code in Phase 3.
 
-At Phase 1, create **`resources/images/icon_steps.png`** directly (~18×18 B&W PNG with transparency). No separate mockup copy under `docs/`. Use ImageMagick:
+### Step icon (reference)
+
+Created from the approved two-shoe-prints design. To regenerate:
 
 ```bash
-convert <source> -resize 18x18 -background none resources/images/icon_steps.png
+convert <source> -resize 18x18 -background none -gravity center -extent 18x18 \
+  -fuzz 10% -transparent white -colorspace Gray -threshold 50% \
+  PNG32:resources/images/icon_steps.png
 ```
 
-Register in [`package.json`](../package.json) as `ICON_STEPS`:
+Registered in [`package.json`](../package.json) as `ICON_STEPS`:
 
 ```json
 {

@@ -84,6 +84,11 @@
                     "type": "bitmap"
                 },
                 {
+                    "file": "images/icon_steps.png",
+                    "name": "ICON_STEPS",
+                    "type": "bitmap"
+                },
+                {
                     "file": "fonts/Big_Noodle_Titling_Cyr.ttf",
                     "name": "BIG_NOODLE_19",
                     "targetPlatforms": null,
