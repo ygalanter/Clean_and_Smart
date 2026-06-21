@@ -10,7 +10,7 @@ Layer *window_layer;
 TextLayer *text_time, *text_row_top, *text_row_bottom, *text_battery, *text_temp;
 Layer *graphics_layer;
 BitmapLayer *temp_layer, *step_icon_top, *step_icon_bottom;
-GBitmap *meteoicons_all, *meteoicon_current, *steps_icon_bitmap;
+GBitmap *meteoicons_all, *meteoicon_current = NULL, *steps_icon_bitmap;
 
 GFont bn_69, bn_30, bn_26, bn_20, bn_19;
 
@@ -20,7 +20,9 @@ char s_time[] = "88.44mm";
 char s_battery[] = "100%";            // test
 char s_temp[] = "-100°";
 
-EffectLayer *zoom_layer_time, *zoom_layer_meteoicon;
+EffectLayer *zoom_layer_time = NULL, *zoom_layer_meteoicon = NULL;
+
+static bool s_app_active = false;
 
 uint8_t flag_hoursMinutesSeparator, flag_dateFormat, flag_bluetooth_alert, flag_language;
 uint8_t flag_topRow, flag_bottomRow, flag_live_steps;
@@ -88,6 +90,8 @@ static void set_time_frame_for_unobstructed_area(GRect free_area)
 // calling for weather update
 static void update_weather()
 {
+  if (!s_app_active) return;
+
   // Only grab the weather if we can talk to phone AND weather is enabled AND currently message is not being processed and JS on phone is ready
   if (bluetooth_connection_service_peek() && !flag_messaging_is_busy && flag_js_is_ready)
   {
@@ -428,6 +432,8 @@ static void refresh_rows(struct tm *tick_time, TimeUnits units_changed)
 // SignificantUpdate always; MovementUpdate only when KEY_LIVE_STEPS is on
 static void health_handler(HealthEventType event, void *context)
 {
+  if (!s_app_active) return;
+
   bool has_step_row = (flag_topRow == ROW_STEPS || flag_bottomRow == ROW_STEPS);
   if (!has_step_row) return;
 
@@ -445,6 +451,7 @@ static void health_handler(HealthEventType event, void *context)
 // handling time
 void tick_handler(struct tm *tick_time, TimeUnits units_changed)
 {
+  if (!s_app_active) return;
 
   char format[6];
 
@@ -540,8 +547,22 @@ void load_fonts()
 #endif
 }
 
+static void unload_fonts(void)
+{
+  fonts_unload_custom_font(bn_69);
+  fonts_unload_custom_font(bn_19);
+#ifdef PBL_RECT
+  fonts_unload_custom_font(bn_30);
+  fonts_unload_custom_font(bn_26);
+#else
+  fonts_unload_custom_font(bn_20);
+#endif
+}
+
 static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 {
+  if (!s_app_active) return;
+
   // APP_LOG(APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' Message from the phone received!");
 
   // Read first item
@@ -713,6 +734,7 @@ TextLayer *create_text_layer(GRect coords, GFont font, GTextAlignment align)
 
 static void bluetooth_handler(bool state)
 {
+  if (!s_app_active) return;
 
   if (state)
   {
@@ -807,6 +829,8 @@ static void graphics_update_proc(Layer *layer, GContext *ctx)
 
 static void battery_handler(BatteryChargeState state)
 {
+  if (!s_app_active) return;
+
   snprintf(s_battery, sizeof("100%"), "%d%%", state.charge_percent);
   text_layer_set_text(text_battery, s_battery);
 
@@ -844,7 +868,7 @@ static void battery_handler(BatteryChargeState state)
 // watchface regains focus after notification — refresh without re-running handle_init()
 static void app_focus_did_change(bool in_focus)
 {
-  if (!in_focus) return;
+  if (!s_app_active || !in_focus) return;
 
   time_t now = time(NULL);
   struct tm *t = localtime(&now);
@@ -856,11 +880,15 @@ static void app_focus_did_change(bool in_focus)
 // adjusting time location when timeline quickview shows.
 void unobstructed_changed(AnimationProgress progress, void *context)
 {
+  if (!s_app_active) return;
+
   set_time_frame_for_unobstructed_area(layer_get_unobstructed_bounds(window_layer));
 }
 
 void unobstructed_did_change(void *context)
 {
+  if (!s_app_active) return;
+
   set_time_frame_for_unobstructed_area(layer_get_unobstructed_bounds(window_layer));
 }
 
@@ -1001,14 +1029,38 @@ void handle_init(void)
   time_t temp = time(NULL);
   struct tm *t = localtime(&temp);
 
+  s_app_active = true;
+
   // Manually call the tick handler when the window is loading
   tick_handler(t, DAY_UNIT | MINUTE_UNIT);
 }
 
 void handle_deinit(void)
 {
+  s_app_active = false;
 
-  // clearning MASK
+  tick_timer_service_unsubscribe();
+  battery_state_service_unsubscribe();
+  bluetooth_connection_service_unsubscribe();
+  unobstructed_area_service_unsubscribe();
+#if defined(PBL_HEALTH)
+  health_service_events_unsubscribe();
+#endif
+  app_focus_service_unsubscribe();
+
+  app_message_deregister_callbacks();
+
+  if (zoom_layer_time)
+  {
+    effect_layer_destroy(zoom_layer_time);
+    zoom_layer_time = NULL;
+  }
+  if (zoom_layer_meteoicon)
+  {
+    effect_layer_destroy(zoom_layer_meteoicon);
+    zoom_layer_meteoicon = NULL;
+  }
+
   text_layer_destroy(text_row_bottom);
   text_layer_destroy(text_time);
   text_layer_destroy(text_row_top);
@@ -1018,22 +1070,25 @@ void handle_deinit(void)
   bitmap_layer_destroy(step_icon_top);
   bitmap_layer_destroy(step_icon_bottom);
   gbitmap_destroy(steps_icon_bitmap);
+  steps_icon_bitmap = NULL;
   gbitmap_destroy(meteoicons_all);
-  gbitmap_destroy(meteoicon_current);
+  meteoicons_all = NULL;
+  if (meteoicon_current)
+  {
+    gbitmap_destroy(meteoicon_current);
+    meteoicon_current = NULL;
+  }
   bitmap_layer_destroy(temp_layer);
 
   layer_destroy(graphics_layer);
 
-  window_destroy(my_window);
-  app_message_deregister_callbacks();
-  tick_timer_service_unsubscribe();
-  battery_state_service_unsubscribe();
-  bluetooth_connection_service_unsubscribe();
-  unobstructed_area_service_unsubscribe();
-#if defined(PBL_HEALTH)
-  health_service_events_unsubscribe();
-#endif
-  app_focus_service_unsubscribe();
+  unload_fonts();
+
+  if (my_window)
+  {
+    window_destroy(my_window);
+    my_window = NULL;
+  }
 }
 
 int main(void)
