@@ -41,8 +41,8 @@ typedef enum {
 #define STEP_ICON_GAP 8
 
 #define ROW_TEXT_BUF_SIZE 48
-#define ROW_DOW_ABBR_MAX 3
-#define ROW_MONTH_ABBR_MAX 6
+#define ROW_DOW_ABBR_MAX 8   /* max UTF-8 bytes; Cyrillic abbrs are 2 chars = 4 bytes */
+#define ROW_MONTH_ABBR_MAX 8 /* max UTF-8 bytes; Cyrillic months are 3 chars = 6 bytes */
 
 // define macro comparing PBL_DISPLAY_HEIGHT with 168
 #ifdef PBL_RECT

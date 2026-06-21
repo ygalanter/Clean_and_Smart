@@ -22,7 +22,7 @@ char LANG_DAY[][7][23] = {
     {"Niedziela", "Poniedziałek", "Wtorek", "Šroda", "Czwartek", "Pia¸tek", "Sobota"},
     {"Vasárnap", "Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat"}};
 
-char LANG_MONTH[][12][6] = {
+char LANG_MONTH[][12][8] = {
     {"jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec"},
     {"gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"},
     {"ЯНВ", "ФЕВ", "МАР", "АПР", "МАЯ", "ИЮН", "ИЮЛ", "АВГ", "СЕН", "ОКТ", "НОЯ", "ДЕК"},
@@ -33,7 +33,7 @@ char LANG_MONTH[][12][6] = {
     {"Sty", "Lut", "Mar", "Kwi", "Maj", "Cze", "Lip", "Sie", "Wrz", "Paž", "Lis", "Gru"},
     {"Jan", "Feb", "Már", "Ápr", "Máj", "Jún", "Júl", "Aug", "Sze", "Okt", "Nov", "Dec"}};
 
-char LANG_DAY_ABBR[][7][4] = {
+char LANG_DAY_ABBR[][7][8] = {
     {"SÖN", "MÅN", "TIS", "ONS", "TOR", "FRE", "LÖR"},
     {"DOM", "LUN", "MAR", "MER", "GIO", "VEN", "SAB"},
     {"ВС", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"},
@@ -44,7 +44,7 @@ char LANG_DAY_ABBR[][7][4] = {
     {"NIE", "PON", "WTO", "SRO", "CZW", "PIA", "SOB"},
     {"VAS", "HÉT", "KED", "SZE", "CSÜ", "PÉN", "SZO"}};
 
-char LANG_MONTH_UPPER[][12][6] = {
+char LANG_MONTH_UPPER[][12][8] = {
     {"JAN", "FEB", "MAR", "APR", "MAJ", "JUN", "JUL", "AUG", "SEP", "OKT", "NOV", "DEC"},
     {"GEN", "FEB", "MAR", "APR", "MAG", "GIU", "LUG", "AGO", "SET", "OTT", "NOV", "DIC"},
     {"ЯНВ", "ФЕВ", "МАР", "АПР", "МАЯ", "ИЮН", "ИЮЛ", "АВГ", "СЕН", "ОКТ", "НОЯ", "ДЕК"},

@@ -268,16 +268,13 @@ static void format_abbr_dow_date(char *buf, size_t len, struct tm *tick_time)
   switch (flag_dateFormat)
   {
   case 0:
-    snprintf(buf, len, "%.*s %.*s-%02d",
-             ROW_DOW_ABBR_MAX, dow, ROW_MONTH_ABBR_MAX, mon, tick_time->tm_mday);
+    snprintf(buf, len, "%s %s-%02d", dow, mon, tick_time->tm_mday);
     break;
   case 1:
-    snprintf(buf, len, "%.*s %02d-%.*s",
-             ROW_DOW_ABBR_MAX, dow, tick_time->tm_mday, ROW_MONTH_ABBR_MAX, mon);
+    snprintf(buf, len, "%s %02d-%s", dow, tick_time->tm_mday, mon);
     break;
   case 2:
-    snprintf(buf, len, "%.*s %02d-%02d",
-             ROW_DOW_ABBR_MAX, dow, tick_time->tm_mon + 1, tick_time->tm_mday);
+    snprintf(buf, len, "%s %02d-%02d", dow, tick_time->tm_mon + 1, tick_time->tm_mday);
     break;
   }
 }
