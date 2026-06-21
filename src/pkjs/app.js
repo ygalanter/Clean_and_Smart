@@ -4,6 +4,52 @@ var clay = new Clay(clayConfig, null, { autoHandleEvents: false });
 
 var current_settings;
 
+var DEFAULT_SETTINGS = {
+  temperatureFormat:     0,
+  hoursMinutesSeparator: 0,
+  dateFormat:            0,
+  topRow:                0,
+  bottomRow:             1,
+  liveSteps:             0,
+  bluetoothAlert:        0,
+  language:              255,
+  textColor:             16777215,
+  bgColor:               0
+};
+
+function mergeSettings(stored) {
+  var merged = {};
+  var key;
+  for (key in DEFAULT_SETTINGS) {
+    if (Object.prototype.hasOwnProperty.call(DEFAULT_SETTINGS, key)) {
+      merged[key] = stored && stored[key] !== undefined && stored[key] !== null
+        ? stored[key]
+        : DEFAULT_SETTINGS[key];
+    }
+  }
+  return merged;
+}
+
+function clayVal(clayData, key, defaultVal) {
+  if (defaultVal === undefined) defaultVal = 0;
+  var v = clayData[key];
+  if (v === undefined || v === null) return defaultVal;
+
+  var raw = (v && typeof v === 'object' && 'value' in v) ? v.value : v;
+  if (typeof raw === 'boolean') return raw ? 1 : 0;
+  if (typeof raw === 'number' && !isNaN(raw)) return raw | 0;
+
+  var n = parseInt(raw, 10);
+  if (!isNaN(n)) return n;
+
+  if (typeof raw === 'string' && /^[0-9a-fA-F]+$/.test(raw)) {
+    n = parseInt(raw, 16);
+    if (!isNaN(n)) return n;
+  }
+
+  return defaultVal;
+}
+
 /*  ****************************************** Weather Section **************************************************** */
 
 // converts open-meteo weather icon code to Yahoo weather icon code (to reuse current bitmap with icon set)
@@ -76,18 +122,9 @@ Pebble.addEventListener('ready', function () {
   }
 
   if (current_settings === null) {
-    current_settings = {
-      temperatureFormat:     0,
-      hoursMinutesSeparator: 0,
-      dateFormat:            0,
-      topRow:                0,
-      bottomRow:             1,
-      liveSteps:             0,
-      bluetoothAlert:        0,
-      language:              255,
-      textColor:             16777215,
-      bgColor:               0
-    };
+    current_settings = DEFAULT_SETTINGS;
+  } else {
+    current_settings = mergeSettings(current_settings);
   }
 
   Pebble.sendAppMessage({ 'KEY_JSREADY': 1 }, function () {}, function () {});
@@ -108,38 +145,33 @@ Pebble.addEventListener('webviewclosed', function (e) {
 
   var clayData = clay.getSettings(e.response, false);
 
-  function val(key) {
-    var v = clayData[key];
-    return parseInt((v && typeof v === 'object') ? v.value : v, 10);
-  }
-
   var msg = {};
-  msg.KEY_HOURS_MINUTES_SEPARATOR = val('KEY_HOURS_MINUTES_SEPARATOR');
-  msg.KEY_DATE_FORMAT             = val('KEY_DATE_FORMAT');
-  msg.KEY_BLUETOOTH_ALERT         = val('KEY_BLUETOOTH_ALERT');
-  msg.KEY_LANGUAGE                = val('KEY_LANGUAGE');
-  msg.KEY_TEXT_COLOR              = val('KEY_TEXT_COLOR');
-  msg.KEY_BG_COLOR                = val('KEY_BG_COLOR');
-  msg.KEY_TOP_ROW                 = val('KEY_TOP_ROW');
-  msg.KEY_BOTTOM_ROW              = val('KEY_BOTTOM_ROW');
-  msg.KEY_LIVE_STEPS              = val('KEY_LIVE_STEPS');
+  msg.KEY_HOURS_MINUTES_SEPARATOR = clayVal(clayData, 'KEY_HOURS_MINUTES_SEPARATOR');
+  msg.KEY_DATE_FORMAT             = clayVal(clayData, 'KEY_DATE_FORMAT');
+  msg.KEY_BLUETOOTH_ALERT         = clayVal(clayData, 'KEY_BLUETOOTH_ALERT');
+  msg.KEY_LANGUAGE                = clayVal(clayData, 'KEY_LANGUAGE');
+  msg.KEY_TEXT_COLOR              = clayVal(clayData, 'KEY_TEXT_COLOR', 16777215);
+  msg.KEY_BG_COLOR                = clayVal(clayData, 'KEY_BG_COLOR', 0);
+  msg.KEY_TOP_ROW                 = clayVal(clayData, 'KEY_TOP_ROW');
+  msg.KEY_BOTTOM_ROW              = clayVal(clayData, 'KEY_BOTTOM_ROW', 1);
+  msg.KEY_LIVE_STEPS              = clayVal(clayData, 'KEY_LIVE_STEPS', 0);
 
-  var newTempFormat = val('KEY_TEMPERATURE_FORMAT');
+  var newTempFormat = clayVal(clayData, 'KEY_TEMPERATURE_FORMAT');
   if (!current_settings || current_settings.temperatureFormat !== newTempFormat) {
     msg.KEY_TEMPERATURE_FORMAT = newTempFormat;
   }
 
   current_settings = {
     temperatureFormat:     newTempFormat,
-    hoursMinutesSeparator: val('KEY_HOURS_MINUTES_SEPARATOR'),
-    dateFormat:            val('KEY_DATE_FORMAT'),
-    topRow:                val('KEY_TOP_ROW'),
-    bottomRow:             val('KEY_BOTTOM_ROW'),
-    liveSteps:             val('KEY_LIVE_STEPS'),
-    bluetoothAlert:        val('KEY_BLUETOOTH_ALERT'),
-    language:              val('KEY_LANGUAGE'),
-    textColor:             val('KEY_TEXT_COLOR'),
-    bgColor:               val('KEY_BG_COLOR')
+    hoursMinutesSeparator: clayVal(clayData, 'KEY_HOURS_MINUTES_SEPARATOR'),
+    dateFormat:            clayVal(clayData, 'KEY_DATE_FORMAT'),
+    topRow:                clayVal(clayData, 'KEY_TOP_ROW'),
+    bottomRow:             clayVal(clayData, 'KEY_BOTTOM_ROW', 1),
+    liveSteps:             clayVal(clayData, 'KEY_LIVE_STEPS', 0),
+    bluetoothAlert:        clayVal(clayData, 'KEY_BLUETOOTH_ALERT'),
+    language:              clayVal(clayData, 'KEY_LANGUAGE', 255),
+    textColor:             clayVal(clayData, 'KEY_TEXT_COLOR', 16777215),
+    bgColor:               clayVal(clayData, 'KEY_BG_COLOR', 0)
   };
   localStorage.setItem('current_settings', JSON.stringify(current_settings));
 

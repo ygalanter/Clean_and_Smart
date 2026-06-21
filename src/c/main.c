@@ -4,15 +4,18 @@
 #include <pebble-effect-layer/pebble-effect-layer.h>
 #include "languages.h"
 
-Window *my_window;
-Layer *window_layer;
+void handle_deinit(void);
 
-TextLayer *text_time, *text_row_top, *text_row_bottom, *text_battery, *text_temp;
-Layer *graphics_layer;
-BitmapLayer *temp_layer, *step_icon_top, *step_icon_bottom;
-GBitmap *meteoicons_all, *meteoicon_current = NULL, *steps_icon_bitmap;
+Window *my_window = NULL;
+Layer *window_layer = NULL;
 
-GFont bn_69, bn_30, bn_26, bn_20, bn_19;
+TextLayer *text_time = NULL, *text_row_top = NULL, *text_row_bottom = NULL;
+TextLayer *text_battery = NULL, *text_temp = NULL;
+Layer *graphics_layer = NULL;
+BitmapLayer *temp_layer = NULL, *step_icon_top = NULL, *step_icon_bottom = NULL;
+GBitmap *meteoicons_all = NULL, *meteoicon_current = NULL, *steps_icon_bitmap = NULL;
+
+GFont bn_69 = NULL, bn_30 = NULL, bn_26 = NULL, bn_20 = NULL, bn_19 = NULL;
 
 char s_row_top[ROW_TEXT_BUF_SIZE];
 char s_row_bottom[ROW_TEXT_BUF_SIZE];
@@ -503,9 +506,8 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed)
 
 void load_fonts()
 {
-
-  fonts_unload_custom_font(bn_69);
-  fonts_unload_custom_font(bn_19);
+  if (bn_69) fonts_unload_custom_font(bn_69);
+  if (bn_19) fonts_unload_custom_font(bn_19);
 
   if (flag_language == LANG_RUSSIAN)
   {
@@ -519,8 +521,8 @@ void load_fonts()
   }
 
 #ifdef PBL_RECT
-  fonts_unload_custom_font(bn_30);
-  fonts_unload_custom_font(bn_26);
+  if (bn_30) fonts_unload_custom_font(bn_30);
+  if (bn_26) fonts_unload_custom_font(bn_26);
 
   if (flag_language == LANG_RUSSIAN)
   {
@@ -534,7 +536,7 @@ void load_fonts()
   }
 
 #else
-  fonts_unload_custom_font(bn_20);
+  if (bn_20) fonts_unload_custom_font(bn_20);
 
   if (flag_language == LANG_RUSSIAN)
   {
@@ -549,13 +551,13 @@ void load_fonts()
 
 static void unload_fonts(void)
 {
-  fonts_unload_custom_font(bn_69);
-  fonts_unload_custom_font(bn_19);
+  if (bn_69) { fonts_unload_custom_font(bn_69); bn_69 = NULL; }
+  if (bn_19) { fonts_unload_custom_font(bn_19); bn_19 = NULL; }
 #ifdef PBL_RECT
-  fonts_unload_custom_font(bn_30);
-  fonts_unload_custom_font(bn_26);
+  if (bn_30) { fonts_unload_custom_font(bn_30); bn_30 = NULL; }
+  if (bn_26) { fonts_unload_custom_font(bn_26); bn_26 = NULL; }
 #else
-  fonts_unload_custom_font(bn_20);
+  if (bn_20) { fonts_unload_custom_font(bn_20); bn_20 = NULL; }
 #endif
 }
 
@@ -894,6 +896,10 @@ void unobstructed_did_change(void *context)
 
 void handle_init(void)
 {
+  if (my_window != NULL)
+  {
+    handle_deinit();
+  }
 
   //   app_focus_service_subscribe_handlers((AppFocusHandlers){
   //     .did_focus = app_focus_changed,
@@ -1038,6 +1044,8 @@ void handle_init(void)
 void handle_deinit(void)
 {
   s_app_active = false;
+  flag_messaging_is_busy = false;
+  flag_js_is_ready = false;
 
   tick_timer_service_unsubscribe();
   battery_state_service_unsubscribe();
@@ -1061,34 +1069,34 @@ void handle_deinit(void)
     zoom_layer_meteoicon = NULL;
   }
 
-  text_layer_destroy(text_row_bottom);
-  text_layer_destroy(text_time);
-  text_layer_destroy(text_row_top);
-  text_layer_destroy(text_battery);
-  text_layer_destroy(text_temp);
+  if (text_row_bottom) { text_layer_destroy(text_row_bottom); text_row_bottom = NULL; }
+  if (text_time) { text_layer_destroy(text_time); text_time = NULL; }
+  if (text_row_top) { text_layer_destroy(text_row_top); text_row_top = NULL; }
+  if (text_battery) { text_layer_destroy(text_battery); text_battery = NULL; }
+  if (text_temp) { text_layer_destroy(text_temp); text_temp = NULL; }
 
-  bitmap_layer_destroy(step_icon_top);
-  bitmap_layer_destroy(step_icon_bottom);
-  gbitmap_destroy(steps_icon_bitmap);
-  steps_icon_bitmap = NULL;
-  gbitmap_destroy(meteoicons_all);
-  meteoicons_all = NULL;
-  if (meteoicon_current)
-  {
-    gbitmap_destroy(meteoicon_current);
-    meteoicon_current = NULL;
-  }
-  bitmap_layer_destroy(temp_layer);
+  if (step_icon_top) { bitmap_layer_destroy(step_icon_top); step_icon_top = NULL; }
+  if (step_icon_bottom) { bitmap_layer_destroy(step_icon_bottom); step_icon_bottom = NULL; }
+  if (steps_icon_bitmap) { gbitmap_destroy(steps_icon_bitmap); steps_icon_bitmap = NULL; }
+  if (meteoicons_all) { gbitmap_destroy(meteoicons_all); meteoicons_all = NULL; }
+  if (meteoicon_current) { gbitmap_destroy(meteoicon_current); meteoicon_current = NULL; }
+  if (temp_layer) { bitmap_layer_destroy(temp_layer); temp_layer = NULL; }
 
-  layer_destroy(graphics_layer);
+  if (graphics_layer) { layer_destroy(graphics_layer); graphics_layer = NULL; }
 
   unload_fonts();
 
   if (my_window)
   {
+    if (window_stack_get_top_window() == my_window)
+    {
+      window_stack_pop(true);
+    }
     window_destroy(my_window);
     my_window = NULL;
   }
+
+  window_layer = NULL;
 }
 
 int main(void)
