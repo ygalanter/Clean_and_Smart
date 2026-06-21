@@ -162,19 +162,39 @@ rebble kill --force
 # or manually: pkill -f qemu-pebble
 ```
 
+For **emery**, use `docs/tools/emery-kill.sh` instead — see below. Generic `rebble kill` does not stop orphaned emery QEMU/pypkjs or reset emery persist flash.
+
 ### Emery install (Pebble Time 2)
 
-Emery’s larger resource pack can overrun the QEMU serial buffer. Without throttling, install often fails silently at `-v` (`App install failed.`). A heavy throttle (e.g. `0.005`) works but can take ~2 minutes.
+Emery on WSL/arm64 is reliable **only when each launch starts clean**. Failures were mostly environment state, not watchface code.
 
-**Recommended** — fast and reliable (~3–30 s):
+#### Two different “stuck” symptoms
+
+| What you see | What it means |
+|---|---|
+| **pebbleOS boot bar** stuck near the start in the QEMU window | Firmware boot — before any app install |
+| `App install failed` / PutBytes timeout in logs (`-vvv`) | Resource upload failed after boot |
+
+#### Root causes (and what does *not* help)
+
+1. **Orphaned QEMU / pypkjs** — `rebble kill` only stops processes listed in `/tmp/pb-emulator.json`. Interrupted installs leave stray emery processes that block the next session.
+2. **Corrupted emery persist flash** — `~/.local/share/pebble-sdk/<sdk>/emery/` (SPI image). Causes the stuck boot splash. `rebble wipe` clears all platforms but does not kill orphans.
+3. **`--throttle` does not help** — emulator install sends the PBW to **pypkjs** over a websocket; PutBytes runs there. Throttle only slows the CLI process.
+4. **Do not kill pypkjs during boot** — firmware waits for the pypkjs bridge before finishing boot.
+
+#### Fix: `emery-kill.sh` before every emery launch
+
+[`docs/tools/emery-kill.sh`](tools/emery-kill.sh) force-kills stray emery QEMU/pypkjs, then deletes `~/.local/share/pebble-sdk/*/emery` so the next boot uses a fresh SPI image. `make emery` runs it before install (full clean + wipe + build + install).
 
 ```bash
-rebble kill --force
-rebble build
-rebble install --emulator emery --throttle 0.001
+make emery
+
+# Or manually, if the PBW is already built:
+bash docs/tools/emery-kill.sh
+rebble install --emulator emery
 ```
 
-Or `make emery` (includes clean/wipe/build). Use `-vvv` only when debugging; single `-v` hides the real error.
+For day-to-day **layout** work, **basalt** is still more reliable on WSL. Use emery locally when you need the Time 2 display (228 px height, zoom layers); use CloudPebble or a real Time 2 for PKJS/settings on emery.
 
 ---
 
@@ -277,6 +297,7 @@ Use a **phone-sized** narrow window (~200px wide) to approximate the Pebble sett
 
 | Path | Purpose |
 |---|---|
+| [`docs/tools/emery-kill.sh`](tools/emery-kill.sh) | Kill orphaned emery QEMU/pypkjs; wipe emery persist flash |
 | [`docs/tools/stpyv8_arm_stub/`](tools/stpyv8_arm_stub/) | stpyv8 stub for arm64 |
 | [`docs/tools/clay-preview-url.js`](tools/clay-preview-url.js) | Generate Clay preview HTML for Chrome |
 | [`configurable-display-rows.md`](configurable-display-rows.md) | Feature plan (Phase 0 checklist links here) |

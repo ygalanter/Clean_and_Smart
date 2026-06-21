@@ -11,8 +11,8 @@ aplite: clean wipe build
 	rebble install --emulator aplite
 
 emery: clean wipe build
-	rebble kill --force 2>/dev/null || true
-	rebble install --emulator emery --throttle 0.001
+	bash docs/tools/emery-kill.sh
+	rebble install --emulator emery
 
 basalt: clean wipe build
 	rebble install --emulator basalt
