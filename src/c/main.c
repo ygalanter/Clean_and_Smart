@@ -124,37 +124,13 @@ static void show_icon(int w_icon)
   bitmap_layer_set_bitmap(temp_layer, meteoicon_current);
 }
 
-static void tint_meteoicon() {
-  GColor *palette = gbitmap_get_palette(meteoicons_all);
-  if (!palette) return;
-
-  int num_colors;
-  switch (gbitmap_get_format(meteoicons_all)) {
-    case GBitmapFormat1BitPalette: num_colors = 2; break;
-    case GBitmapFormat2BitPalette: num_colors = 4; break;
-    case GBitmapFormat4BitPalette: num_colors = 16; break;
-    default: return;
-  }
-
-  GColor new_color = GColorFromHEX(flag_textColor);
-  for (int i = 0; i < num_colors; i++) {
-    if (!gcolor_equal(palette[i], GColorClear)) {
-      palette[i] = new_color;
-    }
-  }
-  layer_mark_dirty(bitmap_layer_get_layer(temp_layer));
-}
-
-// tint footsteps icon to match KEY_TEXT_COLOR
-static void tint_step_icon(void)
+static void tint_palettized_bitmap(GBitmap *bitmap)
 {
-  if (!steps_icon_bitmap) return;
-
-  GColor *palette = gbitmap_get_palette(steps_icon_bitmap);
+  GColor *palette = gbitmap_get_palette(bitmap);
   if (!palette) return;
 
   int num_colors;
-  switch (gbitmap_get_format(steps_icon_bitmap))
+  switch (gbitmap_get_format(bitmap))
   {
     case GBitmapFormat1BitPalette: num_colors = 2; break;
     case GBitmapFormat2BitPalette: num_colors = 4; break;
@@ -170,6 +146,18 @@ static void tint_step_icon(void)
       palette[i] = new_color;
     }
   }
+}
+
+static void tint_meteoicon() {
+  tint_palettized_bitmap(meteoicons_all);
+  layer_mark_dirty(bitmap_layer_get_layer(temp_layer));
+}
+
+// tint footsteps icon to match KEY_TEXT_COLOR (same approach as meteo icon)
+static void tint_step_icon(void)
+{
+  if (!steps_icon_bitmap) return;
+  tint_palettized_bitmap(steps_icon_bitmap);
   if (step_icon_top) layer_mark_dirty(bitmap_layer_get_layer(step_icon_top));
   if (step_icon_bottom) layer_mark_dirty(bitmap_layer_get_layer(step_icon_bottom));
 }
@@ -340,19 +328,18 @@ static void layout_step_row(TextLayer *text, BitmapLayer *icon, GRect full_frame
   text_layer_set_text_alignment(text, GTextAlignmentLeft);
 
   GSize content = text_layer_get_content_size(text);
-  GSize icon_sz = gbitmap_get_bounds(steps_icon_bitmap).size;
-  int icon_w = icon_sz.w;
-  int icon_h = icon_sz.h;
+  GRect icon_bounds = gbitmap_get_bounds(steps_icon_bitmap);
+  int icon_w = icon_bounds.size.w;
+  int icon_h = icon_bounds.size.h;
 
   int total_w = icon_w + STEP_ICON_GAP + content.w;
   int start_x = full_frame.origin.x + (full_frame.size.w - total_w) / 2;
 
-  // Bottom-align icon with the rendered text block (feet sit on the number baseline)
-  int text_block_top = full_frame.origin.y + (full_frame.size.h - content.h) / 2;
-  int icon_y = text_block_top + content.h - icon_h;
-  if (icon_y < full_frame.origin.y)
+  // Center icon in row; feet art sits high in the bitmap box
+  int icon_y = full_frame.origin.y + (full_frame.size.h - icon_h) / 2 + 3;
+  if (icon_y + icon_h > full_frame.origin.y + full_frame.size.h)
   {
-    icon_y = full_frame.origin.y;
+    icon_y = full_frame.origin.y + full_frame.size.h - icon_h;
   }
 
   layer_set_frame(bitmap_layer_get_layer(icon), GRect(start_x, icon_y, icon_w, icon_h));
@@ -913,7 +900,7 @@ void handle_init(void)
 
   flag_hoursMinutesSeparator = persist_exists(KEY_HOURS_MINUTES_SEPARATOR) ? persist_read_int(KEY_HOURS_MINUTES_SEPARATOR) : 0;
   flag_dateFormat = persist_exists(KEY_DATE_FORMAT) ? persist_read_int(KEY_DATE_FORMAT) : 0;
-  flag_topRow = persist_exists(KEY_TOP_ROW) ? persist_read_int(KEY_TOP_ROW) : 0;
+  flag_topRow = persist_exists(KEY_TOP_ROW) ? persist_read_int(KEY_TOP_ROW) : ROW_FULL_DOW;
   flag_bottomRow = persist_exists(KEY_BOTTOM_ROW) ? persist_read_int(KEY_BOTTOM_ROW) : 1;
   flag_live_steps = persist_exists(KEY_LIVE_STEPS) ? persist_read_int(KEY_LIVE_STEPS) : 0;
   flag_bluetooth_alert = persist_exists(KEY_BLUETOOTH_ALERT) ? persist_read_int(KEY_BLUETOOTH_ALERT) : 0;
