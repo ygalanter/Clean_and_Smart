@@ -91,7 +91,9 @@
                     "file": "images/icon_steps_26.png",
                     "name": "ICON_STEPS",
                     "targetPlatforms": [
+                        "aplite",
                         "basalt",
+                        "diorite",
                         "emery"
                     ],
                     "type": "bitmap"
@@ -101,15 +103,6 @@
                     "name": "ICON_STEPS",
                     "targetPlatforms": [
                         "chalk"
-                    ],
-                    "type": "bitmap"
-                },
-                {
-                    "file": "images/icon_steps_26.png",
-                    "name": "ICON_STEPS",
-                    "targetPlatforms": [
-                        "aplite",
-                        "diorite"
                     ],
                     "type": "bitmap"
                 },
@@ -171,5 +164,5 @@
             "watchface": true
         }
     },
-    "version": "2.53.0"
+    "version": "2.53.1"
 }
