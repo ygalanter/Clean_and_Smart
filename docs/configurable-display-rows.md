@@ -1,8 +1,8 @@
 # Configurable Top/Bottom Display Rows
 
-Design and implementation plan for refactoring Clean & Smart watchface rows.
+Design notes and implementation record for the Clean & Smart row refactor (shipped in v2.51.0).
 
-**Status:** Phase 3 complete. Phase 4 (testing) not started.
+**Status:** All phases complete (Phase 4 testing: 12/12). Post-ship: `(empty)` row option added (mode 4).
 
 **Build system:** `rebble` is a symlink to `pebble` in `~/.local/bin` (Makefile unchanged).
 
@@ -16,13 +16,13 @@ Design and implementation plan for refactoring Clean & Smart watchface rows.
 | **1** | [Assets](#phase-1-assets) — step icon PNG | yes |
 | **2** | [Settings plumbing](#settings--persistence) — message keys, Clay, PKJS | yes |
 | **3** | [Core C refactor](#architecture) — rows, formatters, health, focus | yes |
-| **4** | [Testing](#testing-checklist) | |
+| **4** | [Testing](#testing-checklist) | yes |
 
 ---
 
 ## Phase 0: Dev environment & tooling
 
-Complete this **before** any feature code. Goal: a clean build of the **current** watchface on your machine.
+Completed before feature work. Goal was a clean build of the pre-refactor watchface on the dev machine.
 
 Setup guide: [`arm64-pebble-dev.md`](arm64-pebble-dev.md) (bootstrap, pypkjs/stpyv8 workarounds, emulator smoke test).
 
@@ -98,24 +98,34 @@ rebble install --emulator basalt
 
 ## Phase 1: Assets
 
-**Done.** `resources/images/icon_steps.png` (18×18, 1-bit-style silhouette with alpha) registered as `ICON_STEPS` in `package.json`. Wired in C code in Phase 3.
+**Done.** Platform-specific step icons registered as `ICON_STEPS` in `package.json` and wired in C code.
+
+| Platform | File | Size |
+|---|---|---|
+| `aplite`, `basalt`, `diorite`, `emery` | `icon_steps_26.png` | 26×26 |
+| `chalk` | `icon_steps_19.png` | 19×19 |
+
+`aplite` is round but uses the 26 px asset; only `chalk` uses the 19 px variant.
+
+Source/reference art: `icon_steps_100.png`.
 
 ### Step icon (reference)
 
-Created from the approved two-shoe-prints design. To regenerate:
+Created from the approved two-shoe-prints design. To regenerate rect icon from source:
 
 ```bash
-convert <source> -resize 18x18 -background none -gravity center -extent 18x18 \
+convert resources/images/icon_steps_100.png -resize 26x26 -background none -gravity center -extent 26x26 \
   -fuzz 10% -transparent white -colorspace Gray -threshold 50% \
-  PNG32:resources/images/icon_steps.png
+  PNG32:resources/images/icon_steps_26.png
 ```
 
-Registered in [`package.json`](../package.json) as `ICON_STEPS`:
+Registered in [`package.json`](../package.json) (rect example):
 
 ```json
 {
-  "file": "images/icon_steps.png",
+  "file": "images/icon_steps_26.png",
   "name": "ICON_STEPS",
+  "targetPlatforms": ["aplite", "basalt", "diorite", "emery"],
   "type": "bitmap"
 }
 ```
@@ -124,18 +134,18 @@ Registered in [`package.json`](../package.json) as `ICON_STEPS`:
 
 ## Goal
 
-Replace the rigid layout in [`src/c/main.c`](../src/c/main.c):
+Replaced the rigid layout in [`src/c/main.c`](../src/c/main.c):
 
 ```mermaid
 flowchart TB
-  subgraph current [Current Layout]
+  subgraph before [Before]
     dow["text_dow: full day name"]
     time["text_time: HH:MM permanent"]
     date["text_date: full date"]
     dow --> time --> date
   end
 
-  subgraph target [Target Layout]
+  subgraph after [After — shipped]
     top["text_row_top: configurable"]
     time2["text_time: HH:MM permanent"]
     bot["text_row_bottom: configurable"]
@@ -143,7 +153,7 @@ flowchart TB
   end
 ```
 
-Each row independently selects one of four modes:
+Each row independently selects one of five modes:
 
 | Value | Mode | Example output |
 |---|---|---|
@@ -151,16 +161,17 @@ Each row independently selects one of four modes:
 | 1 | Full date | `DEC-10-2015` (uses existing `KEY_DATE_FORMAT`) |
 | 2 | Step count | `[foot] 8432` — step icon + number; `--` or `!!!` when unavailable/overflow |
 | 3 | Abbreviated DOW + abbreviated date | `SAT 20-JUN-2026` — **both** parts abbreviated, combined in one row |
+| 4 | Empty | Row hidden (no text, no icon) |
 
-**Defaults (new installs):** top = 0 (full DOW), bottom = 1 (full date) — matches current behavior.
+**Defaults (new installs):** top = 0 (full DOW), bottom = 1 (full date) — matches pre-refactor behavior.
 
 ---
 
 ## Architecture
 
-### New row rendering pipeline
+### Row rendering pipeline
 
-Extract formatting from `tick_handler()` into dedicated helpers in [`src/c/main.c`](../src/c/main.c):
+Implemented in [`src/c/main.c`](../src/c/main.c):
 
 ```c
 typedef enum {
@@ -168,18 +179,28 @@ typedef enum {
   ROW_FULL_DATE = 1,
   ROW_STEPS = 2,
   ROW_ABBR_DOW_DATE = 3,
+  ROW_EMPTY = 4,
 } RowDisplayMode;
 
 static void format_full_dow(char *buf, size_t len, struct tm *t);
 static void format_full_date(char *buf, size_t len, struct tm *t);
+static void get_abbr_dow(char *buf, size_t len, struct tm *t);
+static void get_abbr_month(char *buf, size_t len, struct tm *t);
 static void format_abbr_dow_date(char *buf, size_t len, struct tm *t);
 static void format_steps(char *buf, size_t len);
-static void update_row(TextLayer *layer, RowDisplayMode mode, struct tm *t);
-static void refresh_rows(TimeUnits units_changed);
+static void layout_empty_row(TextLayer *text, BitmapLayer *icon);
+static void layout_step_row(TextLayer *text, BitmapLayer *icon, GRect full_frame, const char *text_str);
+static void layout_text_row(TextLayer *text, BitmapLayer *icon, GRect full_frame,
+                            GTextAlignment align, const char *text_str);
+static void update_row(TextLayer *text, BitmapLayer *icon, GRect full_frame,
+                       GTextAlignment text_align, RowDisplayMode mode, struct tm *tick_time,
+                       char *buf, size_t buf_len);
+static void refresh_steps_rows(void);
+static void refresh_rows(struct tm *tick_time, TimeUnits units_changed);
 ```
 
-- **`format_full_date`** — move existing `switch (flag_dateFormat)` logic from `tick_handler` (lines 188–225); unchanged behavior.
-- **`format_full_dow`** — move existing DOW logic (lines 229–237): custom `LANG_DAY[]` when `flag_language != LANG_DEFAULT`, else `strftime(..., "%A", ...)`.
+- **`format_full_date`** — existing `switch (flag_dateFormat)` logic; behavior unchanged from pre-refactor.
+- **`format_full_dow`** — custom `LANG_DAY[]` when `flag_language != LANG_DEFAULT`, else `strftime(..., "%A", ...)`.
 - **`format_abbr_dow_date`** — **abbreviated DOW + abbreviated date** in one string (mode 3):
   - **Abbrev DOW:** `%a` / `LANG_DAY_ABBR[]` (≤3 chars).
   - **Abbrev date:** 3-char month from `%b` / `LANG_MONTH_UPPER[]`; day + year per `KEY_DATE_FORMAT`. Never `%B` or `%A`.
@@ -187,16 +208,25 @@ static void refresh_rows(TimeUnits units_changed);
     - Format 0 (MDY): `{ABBR_DOW} {MON}-{DD}-{YYYY}` e.g. `SAT JUN-20-2026`
     - Format 1 (DMY): `{ABBR_DOW} {DD}-{MON}-{YYYY}` e.g. `SAT 20-JUN-2026`
     - Format 2 (YMD): `{ABBR_DOW} {YYYY}-{MM}-{DD}` e.g. `SAT 2026-06-20`
-- **`format_steps`** — health API or `"--"`; overflow → `"!!!"`:
+- **`format_steps`** — checks `health_service_metric_accessible` first; shows `"--"` when unavailable; overflow → `"!!!"`:
 
 ```c
+HealthServiceAccessibilityMask mask = health_service_metric_accessible(
+    HealthMetricStepCount, now - SECONDS_PER_DAY, now);
+if (!(mask & HealthServiceAccessibilityMaskAvailable)) {
+  strncpy(buf, "--", ...);
+  return;
+}
 HealthValue steps = health_service_sum_today(HealthMetricStepCount);
 if (steps > 99999) {
-  snprintf(buf, len, "!!!");
+  strncpy(buf, "!!!", ...);
 } else {
-  snprintf(buf, len, "%d", (int)steps);
+  snprintf(buf, ..., "%u", (unsigned int)steps);
 }
 ```
+
+- **`layout_empty_row`** — hides text layer and step icon (mode 4).
+- **`layout_step_row`** / **`layout_text_row`** — unhide text layer when switching back from empty.
 
 ### Step icon (mode 2 only)
 
@@ -205,21 +235,22 @@ When a row is in step mode, show footsteps icon **left** of the count (including
 ```mermaid
 flowchart LR
   subgraph stepRow [Step row layout]
-    icon["icon_steps 18px"]
-    gap["4px gap"]
+    icon["icon_steps"]
+    gap["8px gap"]
     text["8432 / -- / !!!"]
     icon --> gap --> text
   end
 ```
 
-- Load `RESOURCE_ID_ICON_STEPS`, tint via `tint_step_icon()` (mirror `tint_meteoicon()`)
-- `step_icon_top` / `step_icon_bottom` `BitmapLayer`s — hidden when row not in step mode
-- `layout_step_row()` centers icon+text group in row bounds
+- Platform-specific assets in [`package.json`](../package.json): `icon_steps_26.png` (rect platforms), `icon_steps_19.png` (`chalk`). Source art: `icon_steps_100.png`.
+- Load `RESOURCE_ID_ICON_STEPS`, tint via `tint_step_icon()` (mirrors `tint_meteoicon()`).
+- `step_icon_top` / `step_icon_bottom` `BitmapLayer`s — hidden when row is not in step mode.
+- `layout_step_row()` centers icon+text group in row bounds; `STEP_ICON_GAP` is 8 px.
 
-| Old | New | Rect position (unchanged) |
-|---|---|---|
-| `text_dow` | `text_row_top` + `step_icon_top` | y ≈ 30, full width |
-| `text_date` | `text_row_bottom` + `step_icon_bottom` | y ≈ 129, full width |
+| Old | New | Rect (`PBL_RECT`) | Round (`chalk` / `aplite`) |
+|---|---|---|---|
+| `text_dow` | `text_row_top` + `step_icon_top` | y ≈ 30, full width, centered | y ≈ 23, full width, centered |
+| `text_date` | `text_row_bottom` + `step_icon_bottom` | y ≈ 129, full width, centered | GRect(35, 111, 80, 27), left-aligned |
 
 ### Update triggers
 
@@ -228,6 +259,7 @@ flowchart LR
 | Full DOW | `DAY_UNIT` |
 | Full date | `DAY_UNIT` |
 | Abbr DOW + abbr date | `DAY_UNIT` |
+| Empty | `DAY_UNIT` (hides row; no ongoing updates) |
 | Steps (default) | `MINUTE_UNIT`; `HealthEventSignificantUpdate`; init; focus resume |
 | Steps (live, opt-in) | Also `HealthEventMovementUpdate` when `KEY_LIVE_STEPS` enabled |
 | All rows + time | `AppFocusService` `did_focus(true)` |
@@ -236,19 +268,18 @@ flowchart LR
 
 Each display update costs battery. Default: **minute-level** refresh for steps (matches time/date).
 
-**Opt-in live steps (`KEY_LIVE_STEPS`, default off):** also refresh on `HealthEventMovementUpdate`. Call `refresh_steps_rows()` only — not full display redraw.
+**Opt-in live steps (`KEY_LIVE_STEPS`, default off):** also refresh on `HealthEventMovementUpdate`. Calls `refresh_steps_rows()` only — not a full display redraw.
 
 ### Returning from notification — NOT init
 
-`handle_init()` runs once at load. On notification dismiss, use `AppFocusService` `did_focus(true)` to refresh stale UI:
+`handle_init()` runs once at load (with idempotent re-init via `handle_deinit()` on reload). On notification dismiss, `AppFocusService` `did_focus(true)` refreshes stale UI:
 
 ```c
 static void app_focus_did_change(bool in_focus) {
-  if (!in_focus) return;
+  if (!s_app_active || !in_focus) return;
   time_t now = time(NULL);
   struct tm *t = localtime(&now);
   tick_handler(t, MINUTE_UNIT | DAY_UNIT);
-  refresh_steps_rows();
   battery_handler(battery_state_service_peek());
   layer_mark_dirty(window_layer);
 }
@@ -256,11 +287,15 @@ static void app_focus_did_change(bool in_focus) {
 
 Clay settings save via AppMessage — separate path, no focus event needed.
 
+### Lifecycle guards
+
+Handlers check `s_app_active` and bail out during deinit/reload. `handle_deinit()` tears down layers, unsubscribes services, and resets flags before re-init.
+
 ---
 
 ## Health API integration
 
-Add to [`package.json`](../package.json):
+In [`package.json`](../package.json):
 
 ```json
 "capabilities": ["location", "configurable", "health"]
@@ -274,6 +309,7 @@ Add to [`package.json`](../package.json):
 
 ```c
 static void health_handler(HealthEventType event, void *context) {
+  if (!s_app_active) return;
   bool has_step_row = (flag_topRow == ROW_STEPS || flag_bottomRow == ROW_STEPS);
   if (!has_step_row) return;
   if (event == HealthEventSignificantUpdate) {
@@ -291,17 +327,17 @@ static void health_handler(HealthEventType event, void *context) {
 
 ## Settings / persistence
 
-### New message keys
+### Message keys
 
 | Key | ID | Purpose |
 |---|---|---|
-| `KEY_TOP_ROW` | 6 | Top row mode (0–3) |
-| `KEY_BOTTOM_ROW` | 8 | Bottom row mode (0–3) |
+| `KEY_TOP_ROW` | 6 | Top row mode (0–4) |
+| `KEY_BOTTOM_ROW` | 8 | Bottom row mode (0–4) |
 | `KEY_LIVE_STEPS` | 9 | 0 = minute only, 1 = live |
 
 ### Clay — [`src/pkjs/config.json`](../src/pkjs/config.json)
 
-**Display Rows** section: two selects (defaults top=0, bottom=1) plus live steps toggle.
+**Display Rows** section: two selects (defaults top=0, bottom=1), five options each including `(empty)`, plus live steps toggle.
 
 ### PKJS — [`src/pkjs/app.js`](../src/pkjs/app.js)
 
@@ -330,10 +366,11 @@ Full save-to-watch testing still requires `rebble install --phone <ip>` locally,
 | Full DOW (0) | `strftime %A` | existing `LANG_DAY` | existing ALL CAPS |
 | Full date (1) | `strftime %b` | existing `LANG_MONTH` | existing ALL CAPS |
 | Abbr DOW + date (3) | `%a` + `%b` uppercase | `LANG_DAY_ABBR` + `LANG_MONTH_UPPER` ALL CAPS | ALL CAPS e.g. `СБ 20-ЯНВ-2026` |
+| Empty (4) | — | — | — |
 
 **Font:** only `LANG_RUSSIAN` uses `Big_Noodle_Titling_Cyr.ttf`. Polish uses Latin font but shares wider 6-char month slot with Russian in date formatting.
 
-Add `LANG_DAY_ABBR[9][7][4]` and `LANG_MONTH_UPPER[9][12][6]` to [`src/c/languages.h`](../src/c/languages.h).
+`LANG_DAY_ABBR[9][7][8]` and `LANG_MONTH_UPPER[9][12][8]` in [`src/c/languages.h`](../src/c/languages.h) (8-byte slots for UTF-8 Cyrillic).
 
 ---
 
@@ -342,12 +379,13 @@ Add `LANG_DAY_ABBR[9][7][4]` and `LANG_MONTH_UPPER[9][12][6]` to [`src/c/languag
 | File | Changes |
 |---|---|
 | [`src/c/languages.h`](../src/c/languages.h) | `LANG_DAY_ABBR`, `LANG_MONTH_UPPER` |
-| [`src/c/main.h`](../src/c/main.h) | `RowDisplayMode`, new message keys |
-| [`src/c/main.c`](../src/c/main.c) | Rows, formatters, step icon, health, focus |
-| [`src/pkjs/config.json`](../src/pkjs/config.json) | Row selects + live steps |
+| [`src/c/main.h`](../src/c/main.h) | `RowDisplayMode`, message keys, `STEP_ICON_GAP` |
+| [`src/c/main.c`](../src/c/main.c) | Rows, formatters, step icon, health, focus, lifecycle guards |
+| [`src/pkjs/config.json`](../src/pkjs/config.json) | Row selects (incl. empty) + live steps |
 | [`src/pkjs/app.js`](../src/pkjs/app.js) | Forward/persist keys |
-| [`package.json`](../package.json) | `messageKeys`, `health`, `ICON_STEPS`, version bump |
-| [`resources/images/icon_steps.png`](../resources/images/icon_steps.png) | From approved design |
+| [`package.json`](../package.json) | `messageKeys`, `health`, platform-specific `ICON_STEPS`, version 2.51.0 |
+| [`resources/images/icon_steps_26.png`](../resources/images/icon_steps_26.png) | Rect step icon |
+| [`resources/images/icon_steps_19.png`](../resources/images/icon_steps_19.png) | Round (`chalk`) step icon |
 
 No changes to [`Makefile`](../Makefile), [`wscript`](../wscript), or npm dependencies.
 
@@ -355,32 +393,39 @@ No changes to [`Makefile`](../Makefile), [`wscript`](../wscript), or npm depende
 
 ## Testing checklist
 
-1. Phase 0 baseline build passes
-2. Default layout matches current watchface
-3. Each row mode on top and bottom (spot-check combinations)
-4. Steps on `emery`/`diorite`: icon + count; `--` when unavailable
-5. Live steps off: updates ≤1/min; live steps on: updates while walking
-6. Steps on `aplite`: `--`, no crash
-7. Step overflow >99999: `[icon] !!!`
-8. Language switching in abbr mode (Swedish, Russian, Italian)
-9. Date format affects mode 1 and mode 3 ordering
-10. Clay settings persist across reload
-11. Focus resume after notification refreshes display
-12. Round (`chalk`): longest strings don't clip
+**Done.** All 12 original tests passed during Phase 4.
+
+- [x] Phase 0 baseline build passes
+- [x] Default layout matches pre-refactor watchface
+- [x] Each row mode on top and bottom (spot-check combinations)
+- [x] Steps on `emery`/`diorite`: icon + count; `--` when unavailable
+- [x] Live steps off: updates ≤1/min; live steps on: updates while walking
+- [x] Steps on `aplite`: `--`, no crash
+- [x] Step overflow >99999: `[icon] !!!`
+- [x] Language switching in abbr mode (Swedish, Russian, Italian)
+- [x] Date format affects mode 1 and mode 3 ordering
+- [x] Clay settings persist across reload
+- [x] Focus resume after notification refreshes display
+- [x] Round (`chalk`): longest strings don't clip
+
+### Post-ship addition
+
+- `(empty)` row option (mode 4) — added after Phase 4; not covered by the original 12 tests.
 
 ---
 
 ## Risks and mitigations
 
-| Risk | Mitigation |
-|---|---|
-| Mode 3 too long on round | DOW ≤3 chars; 3-char months; test Polish/Catalan/Russian |
-| Polish uses Latin, not Cyrillic | Only Russian loads Cyrillic font; verify Polish diacritics in abbr tables |
-| Polish/Russian wider month field | Reuse 6-char month slot logic from full date |
-| ALL CAPS accented chars | Explicit upper tables, not runtime `toupper` |
-| Mode 3 vs mode 1 confusion | Separate formatters and Clay labels |
-| Step icon + 5 digits on round | Center icon+text group; shrink gap if needed |
-| Step count >99999 | Show `!!!` |
-| Missing `health` capability | Add before any Health API call |
-| Steps unavailable | Show `--`; `PBL_HEALTH` guards |
-| Live steps battery drain | Default off; MovementUpdate redraws step rows only |
+| Risk | Mitigation | Outcome |
+|---|---|---|
+| Mode 3 too long on round | DOW ≤3 chars; 3-char months; test Polish/Catalan/Russian | Verified on `chalk` (test 12) |
+| Polish uses Latin, not Cyrillic | Only Russian loads Cyrillic font; verify Polish diacritics in abbr tables | Verified in language tests |
+| Polish/Russian wider month field | Reuse 6-char month slot logic from full date | Shipped as 8-byte UTF-8 slots |
+| ALL CAPS accented chars | Explicit upper tables, not runtime `toupper` | Shipped in `LANG_*_UPPER` tables |
+| Mode 3 vs mode 1 confusion | Separate formatters and Clay labels | Shipped |
+| Step icon + 5 digits on round | Center icon+text group; 8 px gap | Shipped; `layout_step_row()` centers group |
+| Step count >99999 | Show `!!!` | Verified (test 7) |
+| Missing `health` capability | Added before any Health API call | Shipped in `package.json` |
+| Steps unavailable | Show `--`; `PBL_HEALTH` guards | Verified on `aplite` (test 6) |
+| Live steps battery drain | Default off; MovementUpdate redraws step rows only | Verified (test 5) |
+| Reload/deinit races | `s_app_active` guards in handlers | Shipped |
