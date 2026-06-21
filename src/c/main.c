@@ -326,8 +326,19 @@ static void format_steps(char *buf, size_t len)
 }
 
 // step row: icon + gap + text, centered as one group within the row bounds
+static void layout_empty_row(TextLayer *text, BitmapLayer *icon)
+{
+  layer_set_hidden(bitmap_layer_get_layer(icon), true);
+  text_layer_set_text(text, "");
+  layer_set_hidden(text_layer_get_layer(text), true);
+}
+
 static void layout_step_row(TextLayer *text, BitmapLayer *icon, GRect full_frame, const char *text_str)
 {
+  layer_set_hidden(text_layer_get_layer(text), false);
+  // Measure with the full row frame — get_content_size() uses the current layer
+  // bounds, so a previously narrowed frame ellipsizes "2644" to "26..." on refresh.
+  layer_set_frame(text_layer_get_layer(text), full_frame);
   text_layer_set_text(text, text_str);
   text_layer_set_text_alignment(text, GTextAlignmentLeft);
 
@@ -349,14 +360,16 @@ static void layout_step_row(TextLayer *text, BitmapLayer *icon, GRect full_frame
   layer_set_frame(bitmap_layer_get_layer(icon), GRect(start_x, icon_y, icon_w, icon_h));
   layer_set_hidden(bitmap_layer_get_layer(icon), false);
 
+  int text_x = start_x + icon_w + STEP_ICON_GAP;
+  int text_w = full_frame.origin.x + full_frame.size.w - text_x;
   layer_set_frame(text_layer_get_layer(text),
-                  GRect(start_x + icon_w + STEP_ICON_GAP, full_frame.origin.y,
-                        content.w, full_frame.size.h));
+                  GRect(text_x, full_frame.origin.y, text_w, full_frame.size.h));
 }
 
 static void layout_text_row(TextLayer *text, BitmapLayer *icon, GRect full_frame,
                             GTextAlignment align, const char *text_str)
 {
+  layer_set_hidden(text_layer_get_layer(text), false);
   layer_set_hidden(bitmap_layer_get_layer(icon), true);
   layer_set_frame(text_layer_get_layer(text), full_frame);
   text_layer_set_text_alignment(text, align);
@@ -384,6 +397,9 @@ static void update_row(TextLayer *text, BitmapLayer *icon, GRect full_frame,
   case ROW_ABBR_DOW_DATE:
     format_abbr_dow_date(buf, buf_len, tick_time);
     layout_text_row(text, icon, full_frame, text_align, buf);
+    break;
+  case ROW_EMPTY:
+    layout_empty_row(text, icon);
     break;
   }
 }

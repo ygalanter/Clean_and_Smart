@@ -36,6 +36,7 @@ typedef enum {
   ROW_FULL_DATE = 1,
   ROW_STEPS = 2,
   ROW_ABBR_DOW_DATE = 3,
+  ROW_EMPTY = 4,
 } RowDisplayMode;
 
 #define STEP_ICON_GAP 8
