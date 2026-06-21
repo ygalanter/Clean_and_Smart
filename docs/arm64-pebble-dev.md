@@ -162,6 +162,20 @@ rebble kill --force
 # or manually: pkill -f qemu-pebble
 ```
 
+### Emery install (Pebble Time 2)
+
+Emery’s larger resource pack can overrun the QEMU serial buffer. Without throttling, install often fails silently at `-v` (`App install failed.`). A heavy throttle (e.g. `0.005`) works but can take ~2 minutes.
+
+**Recommended** — fast and reliable (~3–30 s):
+
+```bash
+rebble kill --force
+rebble build
+rebble install --emulator emery --throttle 0.001
+```
+
+Or `make emery` (includes clean/wipe/build). Use `-vvv` only when debugging; single `-v` hides the real error.
+
 ---
 
 ## Testing PKJS and settings
