@@ -14,7 +14,8 @@ var DEFAULT_SETTINGS = {
   bluetoothAlert:        0,
   language:              255,
   textColor:             16777215,
-  bgColor:               0
+  bgColor:               0,
+  mockBattery:           -1
 };
 
 function mergeSettings(stored) {
@@ -155,6 +156,7 @@ Pebble.addEventListener('webviewclosed', function (e) {
   msg.KEY_TOP_ROW                 = clayVal(clayData, 'KEY_TOP_ROW');
   msg.KEY_BOTTOM_ROW              = clayVal(clayData, 'KEY_BOTTOM_ROW', 1);
   msg.KEY_LIVE_STEPS              = clayVal(clayData, 'KEY_LIVE_STEPS', 0);
+  msg.KEY_MOCK_BATTERY            = clayVal(clayData, 'KEY_MOCK_BATTERY', -1);
 
   var newTempFormat = clayVal(clayData, 'KEY_TEMPERATURE_FORMAT');
   if (!current_settings || current_settings.temperatureFormat !== newTempFormat) {
@@ -171,7 +173,8 @@ Pebble.addEventListener('webviewclosed', function (e) {
     bluetoothAlert:        clayVal(clayData, 'KEY_BLUETOOTH_ALERT'),
     language:              clayVal(clayData, 'KEY_LANGUAGE', 255),
     textColor:             clayVal(clayData, 'KEY_TEXT_COLOR', 16777215),
-    bgColor:               clayVal(clayData, 'KEY_BG_COLOR', 0)
+    bgColor:               clayVal(clayData, 'KEY_BG_COLOR', 0),
+    mockBattery:           clayVal(clayData, 'KEY_MOCK_BATTERY', -1)
   };
   localStorage.setItem('current_settings', JSON.stringify(current_settings));
 
