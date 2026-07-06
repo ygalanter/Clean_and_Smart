@@ -783,16 +783,21 @@ static uint8_t effective_battery_percent(void)
   return (uint8_t)battery_state_service_peek().charge_percent;
 }
 
+static bool is_light_background(void)
+{
+  return flag_bgColor == 0xFFFFFF;
+}
+
 static GColor battery_color_for_percent(uint8_t pct)
 {
 #ifdef PBL_COLOR
   if (pct >= 50)
   {
-    return flag_bgColor == 0xFFFFFF ? GColorIslamicGreen : GColorGreen;
+    return is_light_background() ? GColorIslamicGreen : GColorGreen;
   }
   if (pct >= 20)
   {
-    return GColorIcterine;
+    return is_light_background() ? GColorOrange : GColorIcterine;
   }
   return GColorRed;
 #else
