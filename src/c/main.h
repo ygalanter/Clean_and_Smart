@@ -15,6 +15,9 @@
 #define KEY_LANGUAGE 10
 #define KEY_TEXT_COLOR 11
 #define KEY_BG_COLOR 12
+#define KEY_MOCK_BATTERY 13
+
+#define MOCK_BATTERY_OFF (-1)
 
 #ifdef PBL_RECT
 #define ICON_WIDTH 40

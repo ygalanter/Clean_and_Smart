@@ -23,6 +23,7 @@
             "KEY_LIVE_STEPS": 9,
             "KEY_BG_COLOR": 12,
             "KEY_LANGUAGE": 10,
+            "KEY_MOCK_BATTERY": 13,
             "KEY_TEXT_COLOR": 11,
             "KEY_TEMPERATURE_FORMAT": 3,
             "KEY_TOP_ROW": 6,
@@ -164,5 +165,5 @@
             "watchface": true
         }
     },
-    "version": "2.51.0"
+    "version": "2.51.1"
 }

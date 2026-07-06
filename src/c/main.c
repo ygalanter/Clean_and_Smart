@@ -5,6 +5,7 @@
 #include "languages.h"
 
 void handle_deinit(void);
+static void battery_handler(BatteryChargeState state);
 
 Window *my_window = NULL;
 Layer *window_layer = NULL;
@@ -30,6 +31,7 @@ static bool s_app_active = false;
 uint8_t flag_hoursMinutesSeparator, flag_dateFormat, flag_bluetooth_alert, flag_language;
 uint8_t flag_topRow, flag_bottomRow, flag_live_steps;
 int flag_textColor, flag_bgColor;
+int8_t flag_mock_battery = MOCK_BATTERY_OFF;
 bool flag_messaging_is_busy = false, flag_js_is_ready = false;
 
 GRect bounds;
@@ -673,6 +675,26 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
         persist_write_int(KEY_BG_COLOR, t->value->int32);
         flag_bgColor = t->value->int32;
         window_set_background_color(my_window, GColorFromHEX(flag_bgColor));
+        layer_mark_dirty(graphics_layer);
+      }
+      break;
+    case KEY_MOCK_BATTERY:
+      {
+        int8_t mock = (int8_t)t->value->int32;
+        if (mock < MOCK_BATTERY_OFF)
+        {
+          mock = MOCK_BATTERY_OFF;
+        }
+        else if (mock > 100)
+        {
+          mock = 100;
+        }
+        if (mock != flag_mock_battery)
+        {
+          persist_write_int(KEY_MOCK_BATTERY, mock);
+          flag_mock_battery = mock;
+          battery_handler(battery_state_service_peek());
+        }
       }
       break;
     case KEY_TOP_ROW:
@@ -750,6 +772,34 @@ TextLayer *create_text_layer(GRect coords, GFont font, GTextAlignment align)
   return text_layer;
 }
 
+#define STATUS_LINE_HEIGHT 4
+
+static uint8_t effective_battery_percent(void)
+{
+  if (flag_mock_battery >= 0)
+  {
+    return (uint8_t)flag_mock_battery;
+  }
+  return (uint8_t)battery_state_service_peek().charge_percent;
+}
+
+static GColor battery_color_for_percent(uint8_t pct)
+{
+#ifdef PBL_COLOR
+  if (pct >= 50)
+  {
+    return flag_bgColor == 0xFFFFFF ? GColorIslamicGreen : GColorGreen;
+  }
+  if (pct >= 20)
+  {
+    return GColorIcterine;
+  }
+  return GColorRed;
+#else
+  return GColorWhite;
+#endif
+}
+
 static void bluetooth_handler(bool state)
 {
   if (!s_app_active) return;
@@ -785,45 +835,13 @@ static void bluetooth_handler(bool state)
 
 static void graphics_update_proc(Layer *layer, GContext *ctx)
 {
+  GColor color = battery_color_for_percent(effective_battery_percent());
 
-  static GColor color;
-
-#ifdef PBL_COLOR
-
-  // doing battery color in ranges with fall thru:
-  //       100% - 50% - GColorGreen
-  //       49% - 20% - GColorIcterine
-  //       19% - 0% - GColorRed
-
-  switch (battery_state_service_peek().charge_percent)
-  {
-  case 100:
-  case 90:
-  case 80:
-  case 70:
-  case 60:
-  case 50:
-    color = GColorGreen;
-    break;
-  case 40:
-  case 30:
-  case 20:
-    color = GColorIcterine;
-    break;
-  case 10:
-  case 0:
-    color = GColorRed;
-    break;
-  }
-#else
-  color = GColorWhite;
-#endif
-
-#ifdef PBL_RECT // on Aplite & Basalt draw think line for battery
+#ifdef PBL_RECT // on Aplite & Basalt draw thick line for battery
   graphics_context_set_fill_color(ctx, color);
-  graphics_fill_rect(ctx, GRect(0, 25 * PBL_DISPLAY_HEIGHT / 168, PBL_DISPLAY_WIDTH, 3), 0, GCornersAll);
-#else // on Chalk draw think circle
-  graphics_context_set_stroke_width(ctx, 4);
+  graphics_fill_rect(ctx, GRect(0, 25 * PBL_DISPLAY_HEIGHT / 168, PBL_DISPLAY_WIDTH, STATUS_LINE_HEIGHT), 0, GCornersAll);
+#else // on Chalk draw thick circle
+  graphics_context_set_stroke_width(ctx, STATUS_LINE_HEIGHT);
   graphics_context_set_stroke_color(ctx, color);
   graphics_draw_circle(ctx, center, 85);
 #endif
@@ -837,8 +855,8 @@ static void graphics_update_proc(Layer *layer, GContext *ctx)
 #endif
 
 #ifdef PBL_RECT // on Aplite & Basalt draw thick line
-    graphics_fill_rect(ctx, GRect(0, PBL_DISPLAY_HEIGHT - 3, PBL_DISPLAY_WIDTH, 3), 0, GCornersAll);
-#else // on Chalk draw think circle
+    graphics_fill_rect(ctx, GRect(0, PBL_DISPLAY_HEIGHT - STATUS_LINE_HEIGHT, PBL_DISPLAY_WIDTH, STATUS_LINE_HEIGHT), 0, GCornersAll);
+#else // on Chalk draw thick circle
     graphics_context_set_stroke_color(ctx, GColorCyan);
     graphics_draw_circle(ctx, center, 76);
 #endif
@@ -848,39 +866,17 @@ static void graphics_update_proc(Layer *layer, GContext *ctx)
 static void battery_handler(BatteryChargeState state)
 {
   if (!s_app_active) return;
+  (void)state;
 
-  snprintf(s_battery, sizeof("100%"), "%d%%", state.charge_percent);
+  uint8_t pct = effective_battery_percent();
+  snprintf(s_battery, sizeof(s_battery), "%d%%", pct);
   text_layer_set_text(text_battery, s_battery);
 
 #ifndef PBL_RECT
-  static GColor color;
-  // doing battery color in ranges with fall thru:
-  //       100% - 50% - GColorGreen
-  //       49% - 20% - GColorIcterine
-  //       19% - 0% - GColorRed
-  switch (state.charge_percent)
-  {
-  case 100:
-  case 90:
-  case 80:
-  case 70:
-  case 60:
-  case 50:
-    color = GColorGreen;
-    break;
-  case 40:
-  case 30:
-  case 20:
-    color = GColorIcterine;
-    break;
-  case 10:
-  case 0:
-    color = GColorRed;
-    break;
-  }
-
-  text_layer_set_text_color(text_battery, color);
+  text_layer_set_text_color(text_battery, battery_color_for_percent(pct));
 #endif
+
+  layer_mark_dirty(graphics_layer);
 }
 
 // watchface regains focus after notification — refresh without re-running handle_init()
@@ -954,6 +950,7 @@ void handle_init(void)
   flag_language = persist_exists(KEY_LANGUAGE) ? persist_read_int(KEY_LANGUAGE) : LANG_DEFAULT;
   flag_textColor = persist_exists(KEY_TEXT_COLOR) ? persist_read_int(KEY_TEXT_COLOR) : 0xFFFFFF;
   flag_bgColor   = persist_exists(KEY_BG_COLOR)   ? persist_read_int(KEY_BG_COLOR)   : 0x000000;
+  flag_mock_battery = persist_exists(KEY_MOCK_BATTERY) ? (int8_t)persist_read_int(KEY_MOCK_BATTERY) : MOCK_BATTERY_OFF;
   window_set_background_color(my_window, GColorFromHEX(flag_bgColor));
   tint_meteoicon();
 
