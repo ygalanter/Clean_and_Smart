@@ -11,7 +11,7 @@ var DEFAULT_SETTINGS = {
   topRow:                0,
   bottomRow:             1,
   liveSteps:             0,
-  bluetoothAlert:        0,
+  bluetoothAlert:        1,
   language:              255,
   textColor:             16777215,
   bgColor:               0,
@@ -29,6 +29,34 @@ function mergeSettings(stored) {
     }
   }
   return merged;
+}
+
+function intColorToClayHex(n) {
+  var hex = (n >>> 0).toString(16);
+  while (hex.length < 6) {
+    hex = '0' + hex;
+  }
+  return hex;
+}
+
+function settingsToClay(settings) {
+  return {
+    KEY_HOURS_MINUTES_SEPARATOR: String(settings.hoursMinutesSeparator),
+    KEY_DATE_FORMAT:             String(settings.dateFormat),
+    KEY_LANGUAGE:                String(settings.language),
+    KEY_TOP_ROW:                 String(settings.topRow),
+    KEY_BOTTOM_ROW:              String(settings.bottomRow),
+    KEY_LIVE_STEPS:              !!settings.liveSteps,
+    KEY_TEMPERATURE_FORMAT:      String(settings.temperatureFormat),
+    KEY_BLUETOOTH_ALERT:         String(settings.bluetoothAlert),
+    KEY_TEXT_COLOR:              intColorToClayHex(settings.textColor),
+    KEY_BG_COLOR:                intColorToClayHex(settings.bgColor),
+    KEY_MOCK_BATTERY:            String(settings.mockBattery)
+  };
+}
+
+function syncClayFromSettings(settings) {
+  clay.setSettings(settingsToClay(settings));
 }
 
 function clayVal(clayData, key, defaultVal) {
@@ -128,6 +156,8 @@ Pebble.addEventListener('ready', function () {
     current_settings = mergeSettings(current_settings);
   }
 
+  syncClayFromSettings(current_settings);
+
   Pebble.sendAppMessage({ 'KEY_JSREADY': 1 }, function () {}, function () {});
 });
 
@@ -138,6 +168,9 @@ Pebble.addEventListener('appmessage', function () {
 /*  ****************************************** Config Section **************************************************** */
 
 Pebble.addEventListener('showConfiguration', function () {
+  if (current_settings) {
+    syncClayFromSettings(current_settings);
+  }
   Pebble.openURL(clay.generateUrl());
 });
 
@@ -149,7 +182,7 @@ Pebble.addEventListener('webviewclosed', function (e) {
   var msg = {};
   msg.KEY_HOURS_MINUTES_SEPARATOR = clayVal(clayData, 'KEY_HOURS_MINUTES_SEPARATOR');
   msg.KEY_DATE_FORMAT             = clayVal(clayData, 'KEY_DATE_FORMAT');
-  msg.KEY_BLUETOOTH_ALERT         = clayVal(clayData, 'KEY_BLUETOOTH_ALERT');
+  msg.KEY_BLUETOOTH_ALERT         = clayVal(clayData, 'KEY_BLUETOOTH_ALERT', 1);
   msg.KEY_LANGUAGE                = clayVal(clayData, 'KEY_LANGUAGE');
   msg.KEY_TEXT_COLOR              = clayVal(clayData, 'KEY_TEXT_COLOR', 16777215);
   msg.KEY_BG_COLOR                = clayVal(clayData, 'KEY_BG_COLOR', 0);
