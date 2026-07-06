@@ -797,7 +797,7 @@ static GColor battery_color_for_percent(uint8_t pct)
   }
   if (pct >= 20)
   {
-    return is_light_background() ? GColorYellow : GColorIcterine;
+    return is_light_background() ? GColorBrass : GColorIcterine;
   }
   return GColorRed;
 #else
