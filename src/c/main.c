@@ -836,6 +836,16 @@ static void bluetooth_handler(bool state)
 static void graphics_update_proc(Layer *layer, GContext *ctx)
 {
   GColor color = battery_color_for_percent(effective_battery_percent());
+  bool show_bt = flag_bluetooth_alert != BLUETOOTH_ALERT_DISABLED && bluetooth_connection_service_peek();
+
+#ifndef PBL_RECT
+  if (show_bt)
+  {
+    graphics_context_set_stroke_width(ctx, STATUS_LINE_HEIGHT);
+    graphics_context_set_stroke_color(ctx, GColorCyan);
+    graphics_draw_circle(ctx, center, 76);
+  }
+#endif
 
 #ifdef PBL_RECT // on Aplite & Basalt draw thick line for battery
   graphics_context_set_fill_color(ctx, color);
@@ -846,8 +856,8 @@ static void graphics_update_proc(Layer *layer, GContext *ctx)
   graphics_draw_circle(ctx, center, 85);
 #endif
 
-  if (flag_bluetooth_alert != BLUETOOTH_ALERT_DISABLED && bluetooth_connection_service_peek())
-  { // checkin bluetooth only if check is enabled
+  if (show_bt)
+  {
 #ifdef PBL_COLOR
     graphics_context_set_fill_color(ctx, GColorCyan);
 #else
@@ -856,9 +866,6 @@ static void graphics_update_proc(Layer *layer, GContext *ctx)
 
 #ifdef PBL_RECT // on Aplite & Basalt draw thick line
     graphics_fill_rect(ctx, GRect(0, PBL_DISPLAY_HEIGHT - STATUS_LINE_HEIGHT, PBL_DISPLAY_WIDTH, STATUS_LINE_HEIGHT), 0, GCornersAll);
-#else // on Chalk draw thick circle
-    graphics_context_set_stroke_color(ctx, GColorCyan);
-    graphics_draw_circle(ctx, center, 76);
 #endif
   }
 }
@@ -946,7 +953,7 @@ void handle_init(void)
   flag_topRow = persist_exists(KEY_TOP_ROW) ? persist_read_int(KEY_TOP_ROW) : ROW_FULL_DOW;
   flag_bottomRow = persist_exists(KEY_BOTTOM_ROW) ? persist_read_int(KEY_BOTTOM_ROW) : 1;
   flag_live_steps = persist_exists(KEY_LIVE_STEPS) ? persist_read_int(KEY_LIVE_STEPS) : 0;
-  flag_bluetooth_alert = persist_exists(KEY_BLUETOOTH_ALERT) ? persist_read_int(KEY_BLUETOOTH_ALERT) : 0;
+  flag_bluetooth_alert = persist_exists(KEY_BLUETOOTH_ALERT) ? persist_read_int(KEY_BLUETOOTH_ALERT) : BLUETOOTH_ALERT_SILENT;
   flag_language = persist_exists(KEY_LANGUAGE) ? persist_read_int(KEY_LANGUAGE) : LANG_DEFAULT;
   flag_textColor = persist_exists(KEY_TEXT_COLOR) ? persist_read_int(KEY_TEXT_COLOR) : 0xFFFFFF;
   flag_bgColor   = persist_exists(KEY_BG_COLOR)   ? persist_read_int(KEY_BG_COLOR)   : 0x000000;
@@ -1031,7 +1038,7 @@ void handle_init(void)
   flag_bluetooth_alert = 0;
   bluetooth_connection_service_subscribe(bluetooth_handler);
   bluetooth_handler(bluetooth_connection_service_peek());
-  flag_bluetooth_alert = persist_exists(KEY_BLUETOOTH_ALERT) ? persist_read_int(KEY_BLUETOOTH_ALERT) : 1;
+  flag_bluetooth_alert = persist_exists(KEY_BLUETOOTH_ALERT) ? persist_read_int(KEY_BLUETOOTH_ALERT) : BLUETOOTH_ALERT_SILENT;
 
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
 

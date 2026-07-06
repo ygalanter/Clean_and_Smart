@@ -110,7 +110,7 @@
         "type": "select",
         "messageKey": "KEY_BLUETOOTH_ALERT",
         "label": "Bluetooth Alert",
-        "defaultValue": "0",
+        "defaultValue": "1",
         "options": [
           { "label": "Disabled", "value": "0" },
           { "label": "Silent",   "value": "1" },
