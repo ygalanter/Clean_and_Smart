@@ -107,17 +107,38 @@ var OpenMetroCodeToYahooIcon = function (weather_code, is_day) {
 };
 
 function getWeather(coords) {
+  if (!coords || coords.latitude === undefined || coords.longitude === undefined) {
+    return;
+  }
+
+  var tempUnit = (current_settings && current_settings.temperatureFormat === 0) ? 'fahrenheit' : 'celsius';
   var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + coords.latitude +
             '&longitude=' + coords.longitude +
-            '&current=temperature_2m,weather_code,is_day&temperature_unit=' +
-            (current_settings.temperatureFormat === 0 ? 'fahrenheit' : 'celsius');
+            '&current=temperature_2m,weather_code,is_day&temperature_unit=' + tempUnit;
 
   var xhr = new XMLHttpRequest();
   xhr.onload = function () {
-    var json = JSON.parse(this.responseText);
+    if (this.status !== 200) {
+      return;
+    }
+
+    var json;
+    try {
+      json = JSON.parse(this.responseText);
+    } catch (e) {
+      return;
+    }
+
+    if (!json || !json.current) {
+      return;
+    }
+
     var temperature = json.current.temperature_2m;
     var code = json.current.weather_code;
     var is_day = json.current.is_day;
+    if (temperature === undefined || code === undefined) {
+      return;
+    }
 
     Pebble.sendAppMessage({
       'KEY_WEATHER_CODE': OpenMetroCodeToYahooIcon(code, is_day),
