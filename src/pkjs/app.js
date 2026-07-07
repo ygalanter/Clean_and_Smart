@@ -1,5 +1,7 @@
 var Clay = require('@rebble/clay');
 var clayConfig = require('./config.json');
+// Mock-battery Clay UI disabled; section preserved in config.mock-battery.ui.json.
+// C-side KEY_MOCK_BATTERY handler remains in main.c for dev builds.
 var clay = new Clay(clayConfig, null, { autoHandleEvents: false });
 
 var current_settings;
@@ -50,8 +52,8 @@ function settingsToClay(settings) {
     KEY_TEMPERATURE_FORMAT:      String(settings.temperatureFormat),
     KEY_BLUETOOTH_ALERT:         String(settings.bluetoothAlert),
     KEY_TEXT_COLOR:              intColorToClayHex(settings.textColor),
-    KEY_BG_COLOR:                intColorToClayHex(settings.bgColor),
-    KEY_MOCK_BATTERY:            String(settings.mockBattery)
+    KEY_BG_COLOR:                intColorToClayHex(settings.bgColor)
+    // KEY_MOCK_BATTERY:         String(settings.mockBattery)
   };
 }
 
@@ -189,7 +191,7 @@ Pebble.addEventListener('webviewclosed', function (e) {
   msg.KEY_TOP_ROW                 = clayVal(clayData, 'KEY_TOP_ROW');
   msg.KEY_BOTTOM_ROW              = clayVal(clayData, 'KEY_BOTTOM_ROW', 1);
   msg.KEY_LIVE_STEPS              = clayVal(clayData, 'KEY_LIVE_STEPS', 0);
-  msg.KEY_MOCK_BATTERY            = clayVal(clayData, 'KEY_MOCK_BATTERY', -1);
+  // msg.KEY_MOCK_BATTERY         = clayVal(clayData, 'KEY_MOCK_BATTERY', -1);
 
   var newTempFormat = clayVal(clayData, 'KEY_TEMPERATURE_FORMAT');
   if (!current_settings || current_settings.temperatureFormat !== newTempFormat) {
@@ -206,8 +208,8 @@ Pebble.addEventListener('webviewclosed', function (e) {
     bluetoothAlert:        clayVal(clayData, 'KEY_BLUETOOTH_ALERT'),
     language:              clayVal(clayData, 'KEY_LANGUAGE', 255),
     textColor:             clayVal(clayData, 'KEY_TEXT_COLOR', 16777215),
-    bgColor:               clayVal(clayData, 'KEY_BG_COLOR', 0),
-    mockBattery:           clayVal(clayData, 'KEY_MOCK_BATTERY', -1)
+    bgColor:               clayVal(clayData, 'KEY_BG_COLOR', 0)
+    // mockBattery:         clayVal(clayData, 'KEY_MOCK_BATTERY', -1)
   };
   localStorage.setItem('current_settings', JSON.stringify(current_settings));
 
