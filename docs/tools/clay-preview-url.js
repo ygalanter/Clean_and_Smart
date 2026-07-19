@@ -4,7 +4,7 @@
 /**
  * Build a Clay settings preview from src/pkjs/config.json.
  *
- * Run from repo root after `rebble build` (needs build/js/message_keys.json).
+ * Run from repo root after `pebble build` (needs build/js/message_keys.json).
  * Writes build/clay-preview.html — open that file in Chrome for a visual check.
  */
 
@@ -18,7 +18,7 @@ const configPath = path.join(repoRoot, 'src/pkjs/config.json');
 const outPath = path.join(repoRoot, 'build/clay-preview.html');
 
 if (!fs.existsSync(keysPath)) {
-  console.error('Missing ' + keysPath + ' — run `rebble build` first.');
+  console.error('Missing ' + keysPath + ' — run `pebble build` first.');
   process.exit(1);
 }
 

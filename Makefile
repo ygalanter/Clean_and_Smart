@@ -1,27 +1,26 @@
+.PHONY: clean wipe build aplite emery basalt chalk diorite
+
 clean:
-	rebble clean
+	pebble clean
 
 wipe:
-	rebble wipe
+	pebble wipe
 
 build:
-	rebble build
+	pebble build
 
 aplite: clean wipe build
-	rebble install --emulator aplite
+	pebble install --emulator aplite
 
 emery: clean wipe build
 	bash docs/tools/emery-kill.sh
-	rebble install --emulator emery
+	pebble install --emulator emery
 
 basalt: clean wipe build
-	rebble install --emulator basalt
+	pebble install --emulator basalt
 
 chalk: clean wipe build
-	rebble install --emulator chalk
+	pebble install --emulator chalk
 
 diorite: clean wipe build
-	rebble install --emulator diorite
-
-
-
+	pebble install --emulator diorite

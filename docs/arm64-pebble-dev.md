@@ -10,11 +10,11 @@ Use this doc for **initial setup** on a fresh machine and as a reference for arm
 
 | Task | Works on arm64? |
 |---|---|
-| `rebble build` → `.pbw` | Yes |
-| Emulator install (`rebble install --emulator basalt`) | Yes (with stub; see below) |
+| `pebble build` → `.pbw` | Yes |
+| Emulator install (`pebble install --emulator basalt`) | Yes (with stub; see below) |
 | Watchface **C code** in emulator | Yes |
 | **PKJS** in emulator (Clay settings, weather API) | No (local WSL); yes in [CloudPebble](#optional-cloudpebble-remix) |
-| `rebble install --phone <ip>` on real hardware | Yes (PKJS runs on the phone) |
+| `pebble install --phone <ip>` on real hardware | Yes (PKJS runs on the phone) |
 | **CloudPebble** (browser IDE + emulator + PKJS) | Yes — no local stpyv8 needed |
 | ImageMagick icon resize | Yes (after `apt install imagemagick`) |
 
@@ -52,11 +52,10 @@ pip install pypkjs --no-deps
 pip install peewee pygeoip python-dateutil backports.ssl-match-hostname gevent-websocket
 
 ln -sf ~/.local/pebble-sdk-venv/bin/pebble ~/.local/bin/pebble
-ln -sf ~/.local/pebble-sdk-venv/bin/pebble ~/.local/bin/rebble
 
 pebble sdk install latest
 npm install
-rebble build
+pebble build
 ```
 
 If anything was created as root, fix ownership (see [File ownership](#file-ownership) below).
@@ -70,7 +69,7 @@ If anything was created as root, fix ownership (see [File ownership](#file-owner
 System Python may be too new (e.g. 3.14) for a full `pebble-tool` install. Use a dedicated venv:
 
 - **Venv:** `~/.local/pebble-sdk-venv`
-- **CLI symlinks:** `~/.local/bin/pebble` and `~/.local/bin/rebble` (Makefile uses `rebble`)
+- **CLI symlink:** `~/.local/bin/pebble` (the Makefile uses `pebble`)
 
 Ensure `~/.local/bin` is on your `PATH` (usually via `~/.bashrc`).
 
@@ -87,7 +86,7 @@ Builds compile without these; the emulator needs SDL.
 
 ### File ownership
 
-If setup was ever run as root, fix ownership before using `pebble`/`rebble`:
+If setup was ever run as root, fix ownership before using `pebble`:
 
 ```bash
 sudo chown -R "$USER:$USER" \
@@ -102,7 +101,7 @@ Symptoms of wrong ownership: `Permission denied` on `~/.local/share/pebble-sdk/s
 
 ## The pypkjs / stpyv8 problem
 
-`rebble install --emulator` needs **pypkjs** — a Python process that bridges the Pebble tool to the QEMU emulator. pypkjs depends on **stpyv8** (Google V8 bindings), which **does not build on aarch64**.
+`pebble install --emulator` needs **pypkjs** — a Python process that bridges the Pebble tool to the QEMU emulator. pypkjs depends on **stpyv8** (Google V8 bindings), which **does not build on aarch64**.
 
 ### Symptom
 
@@ -144,9 +143,9 @@ From the repo root:
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
-rebble build
-rebble kill --force          # clear stale QEMU/pypkjs from a failed attempt
-rebble install --emulator basalt
+pebble build
+pebble kill --force          # clear stale QEMU/pypkjs from a failed attempt
+pebble install --emulator basalt
 ```
 
 You should see **Clean & Smart** in the SDL window: day name, time, date. Weather may be absent — that is expected on arm64.
@@ -158,11 +157,11 @@ Other platforms: `aplite`, `chalk`, `diorite`, `emery` (see `Makefile` targets).
 If install behaves oddly, kill everything and retry:
 
 ```bash
-rebble kill --force
+pebble kill --force
 # or manually: pkill -f qemu-pebble
 ```
 
-For **emery**, use `docs/tools/emery-kill.sh` instead — see below. Generic `rebble kill` does not stop orphaned emery QEMU/pypkjs or reset emery persist flash.
+For **emery**, use `docs/tools/emery-kill.sh` instead — see below. Generic `pebble kill` does not stop orphaned emery QEMU/pypkjs or reset emery persist flash.
 
 ### Emery install (Pebble Time 2)
 
@@ -177,8 +176,8 @@ Emery on WSL/arm64 is reliable **only when each launch starts clean**. Failures 
 
 #### Root causes (and what does *not* help)
 
-1. **Orphaned QEMU / pypkjs** — `rebble kill` only stops processes listed in `/tmp/pb-emulator.json`. Interrupted installs leave stray emery processes that block the next session.
-2. **Corrupted emery persist flash** — `~/.local/share/pebble-sdk/<sdk>/emery/` (SPI image). Causes the stuck boot splash. `rebble wipe` clears all platforms but does not kill orphans.
+1. **Orphaned QEMU / pypkjs** — `pebble kill` only stops processes listed in `/tmp/pb-emulator.json`. Interrupted installs leave stray emery processes that block the next session.
+2. **Corrupted emery persist flash** — `~/.local/share/pebble-sdk/<sdk>/emery/` (SPI image). Causes the stuck boot splash. `pebble wipe` clears all platforms but does not kill orphans.
 3. **`--throttle` does not help** — emulator install sends the PBW to **pypkjs** over a websocket; PutBytes runs there. Throttle only slows the CLI process.
 4. **Do not kill pypkjs during boot** — firmware waits for the pypkjs bridge before finishing boot.
 
@@ -191,7 +190,7 @@ make emery
 
 # Or manually, if the PBW is already built:
 bash docs/tools/emery-kill.sh
-rebble install --emulator emery
+pebble install --emulator emery
 ```
 
 For day-to-day **layout** work, **basalt** is still more reliable on WSL. Use emery locally when you need the Time 2 display (228 px height, zoom layers); use CloudPebble or a real Time 2 for PKJS/settings on emery.
@@ -203,7 +202,7 @@ For day-to-day **layout** work, **basalt** is still more reliable on WSL. Use em
 PKJS **does** run on a real phone when you install over the developer connection:
 
 ```bash
-rebble install --phone <phone-ip>
+pebble install --phone <phone-ip>
 ```
 
 Use this for Clay settings and weather during Phase 2+ if emulator PKJS is required.
@@ -226,7 +225,7 @@ The [Rebble app store listing](https://apps.rebble.io) for Clean & Smart shows *
 
 | Use CloudPebble | Stay local (this doc) |
 |---|---|
-| Phase 2: full Clay settings + save flow in emulator | Primary C refactor, git, Cursor, Makefile/`rebble` |
+| Phase 2: full Clay settings + save flow in emulator | Primary C refactor, git, Cursor, Makefile/`pebble` |
 | Weather PKJS smoke test in emulator | Day-to-day builds and watchface layout |
 | No local SDK setup | Docs, scripts, upstream PR workflow |
 
@@ -239,7 +238,7 @@ You can use **both**: develop C locally, push to GitHub, pull/build in CloudPebb
    [cloudpebble.repebble.com/ide/import/github/yaronf/Clean_and_Smart](https://cloudpebble.repebble.com/ide/import/github/yaronf/Clean_and_Smart)
 3. Build → run the **basalt** emulator → open watchface **Settings** to test Clay.
 
-**Import error `Invalid semver 2.50`:** CloudPebble requires strict semver (`major.minor.patch`). This repo uses `2.50.0` in `package.json` (legacy Pebble faces often used `2.50`, which local `rebble build` accepts but CloudPebble rejects).
+**Import error `Invalid semver`:** CloudPebble requires the `package.json` version to use strict `major.minor.patch` formatting.
 
 Upstream (original author):  
 [cloudpebble.repebble.com/ide/import/github/ygalanter/Clean_and_Smart](https://cloudpebble.repebble.com/ide/import/github/ygalanter/Clean_and_Smart)
@@ -259,7 +258,7 @@ Use this during **Phase 2** when editing [`src/pkjs/config.json`](../src/pkjs/co
 From the repo root in WSL:
 
 ```bash
-rebble build
+pebble build
 node docs/tools/clay-preview-url.js
 # prints: .../build/clay-preview.html
 ```

@@ -4,7 +4,7 @@ Design notes and implementation record for the Clean & Smart row refactor (shipp
 
 **Status:** All phases complete (Phase 4 testing: 12/12). Post-ship: `(empty)` row option added (mode 4).
 
-**Build system:** `rebble` is a symlink to `pebble` in `~/.local/bin` (Makefile unchanged).
+**Build system:** The Makefile calls the canonical `pebble` CLI directly.
 
 ---
 
@@ -49,15 +49,15 @@ See [`arm64-pebble-dev.md`](arm64-pebble-dev.md) for the full pypkjs/stpyv8 stor
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
-source ~/.local/pebble-sdk-venv/bin/activate   # optional; rebble/pebble also symlinked in ~/.local/bin
+source ~/.local/pebble-sdk-venv/bin/activate   # optional when pebble is already on PATH
 pebble --version
 pebble sdk list
 ```
 
-Makefile compatibility:
+Makefile shortcut:
 
 ```bash
-rebble build    # symlink to pebble
+make build
 ```
 
 SDK installed: **4.9.169** at `~/.local/share/pebble-sdk/`.
@@ -71,7 +71,7 @@ npm install
 ### Baseline build (verified)
 
 ```bash
-rebble build
+pebble build
 # Output: build/Clean_and_Smart.pbw
 ```
 
@@ -80,19 +80,19 @@ rebble build
 See [`arm64-pebble-dev.md`](arm64-pebble-dev.md#emulator-smoke-test).
 
 ```bash
-rebble kill --force
-rebble install --emulator basalt
+pebble kill --force
+pebble install --emulator basalt
 ```
 
 ### Phase 0 checklist
 
 - [x] `uv` + Python 3.13 venv + `pebble-tool`
 - [x] `pebble sdk install latest`
-- [x] `rebble` symlink for Makefile
+- [x] `pebble` CLI available to the Makefile
 - [x] `npm install`
-- [x] `rebble build` succeeds
+- [x] `pebble build` succeeds
 - [x] `sudo apt` emulator libs + ImageMagick
-- [x] Emulator install (`rebble install --emulator basalt`)
+- [x] Emulator install (`pebble install --emulator basalt`)
 
 ---
 
@@ -343,19 +343,19 @@ static void health_handler(HealthEventType event, void *context) {
 
 Forward and persist new keys in `current_settings`.
 
-Legacy [`html/clean_smart_config.htm`](../html/clean_smart_config.htm): do not update.
+Clay is the sole configuration UI; the legacy Slate page has been removed.
 
 ### Previewing Clay on arm64 (visual only)
 
 Emulator PKJS is unavailable on arm64 WSL; use Chrome on Windows to review the settings **layout** after editing `config.json`. See [`arm64-pebble-dev.md` — Clay settings visual check](arm64-pebble-dev.md#clay-settings-visual-check):
 
 ```bash
-rebble build
+pebble build
 node docs/tools/clay-preview-url.js
 # open build/clay-preview.html in Windows Chrome
 ```
 
-Full save-to-watch testing still requires `rebble install --phone <ip>` locally, or build/install from [CloudPebble](arm64-pebble-dev.md#optional-cloudpebble-remix) (full PKJS in the browser emulator).
+Full save-to-watch testing still requires `pebble install --phone <ip>` locally, or build/install from [CloudPebble](arm64-pebble-dev.md#optional-cloudpebble-remix) (full PKJS in the browser emulator).
 
 ---
 
@@ -383,11 +383,11 @@ Full save-to-watch testing still requires `rebble install --phone <ip>` locally,
 | [`src/c/main.c`](../src/c/main.c) | Rows, formatters, step icon, health, focus, lifecycle guards |
 | [`src/pkjs/config.json`](../src/pkjs/config.json) | Row selects (incl. empty) + live steps |
 | [`src/pkjs/app.js`](../src/pkjs/app.js) | Forward/persist keys |
-| [`package.json`](../package.json) | `messageKeys`, `health`, platform-specific `ICON_STEPS`, version 2.51.0 |
+| [`package.json`](../package.json) | `messageKeys`, `health`, platform-specific `ICON_STEPS` |
 | [`resources/images/icon_steps_26.png`](../resources/images/icon_steps_26.png) | Rect step icon |
 | [`resources/images/icon_steps_19.png`](../resources/images/icon_steps_19.png) | Round (`chalk`) step icon |
 
-No changes to [`Makefile`](../Makefile), [`wscript`](../wscript), or npm dependencies.
+The Makefile uses the canonical `pebble` CLI; `wscript` and npm dependencies are unchanged.
 
 ---
 

@@ -99,6 +99,17 @@
           { "label": "Fahrenheit", "value": "0" },
           { "label": "Celsius",    "value": "1" }
         ]
+      },
+      {
+        "type": "select",
+        "messageKey": "KEY_WEATHER_INTERVAL",
+        "label": "Update Frequency",
+        "defaultValue": "60",
+        "options": [
+          { "label": "Every 15 minutes", "value": "15" },
+          { "label": "Every 30 minutes", "value": "30" },
+          { "label": "Every 60 minutes", "value": "60" }
+        ]
       }
     ]
   },

@@ -30,14 +30,27 @@ static bool s_app_active = false;
 
 uint8_t flag_hoursMinutesSeparator, flag_dateFormat, flag_bluetooth_alert, flag_language;
 uint8_t flag_topRow, flag_bottomRow, flag_live_steps;
+uint8_t flag_weatherInterval;
 int flag_textColor, flag_bgColor;
-int8_t flag_mock_battery = MOCK_BATTERY_OFF;
-bool flag_messaging_is_busy = false, flag_js_is_ready = false;
+bool flag_messaging_is_busy = false;
 
 GRect bounds;
 GPoint center;
 GRect row_top_frame, row_bottom_frame;
 GTextAlignment row_bottom_text_align;
+
+static uint8_t normalize_weather_interval(int interval)
+{
+  switch (interval)
+  {
+  case 15:
+  case 30:
+  case 60:
+    return interval;
+  default:
+    return WEATHER_INTERVAL_DEFAULT;
+  }
+}
 
 static GRect get_time_frame()
 {
@@ -72,53 +85,36 @@ static void set_time_frame_for_unobstructed_area(GRect free_area)
   set_time_frame(frame);
 }
 
-// // {*********************** THIS BLOCK PROPERLY RESTORES EFFECT LAYER AFTER A NOTIFICATION IS DISMISSED
-
-// // when app got focus - restore and refresh window - that makes it dynamic again
-// static void app_focus_changed(bool focused) {
-//   if (focused && effect_layer) {
-//      layer_set_hidden(window_layer, false);
-//      layer_mark_dirty(window_layer);
-//   }
-
-// }
-
-// // when app is about to regain focus - hide main window - this restores static pic of previous screen appear
-// static void app_focus_changing(bool focused) {
-//   if (focused && effect_layer) {
-//      layer_set_hidden(window_layer, true);
-//   }
-
-// }
-// // *********************** }
-
 // calling for weather update
 static void update_weather()
 {
   if (!s_app_active) return;
 
-  // Only grab the weather if we can talk to phone AND weather is enabled AND currently message is not being processed and JS on phone is ready
-  if (bluetooth_connection_service_peek() && !flag_messaging_is_busy && flag_js_is_ready)
+  // Sending the request can also wake the phone-side JavaScript. Do not block
+  // scheduled refreshes if its one-shot ready message was missed.
+  if (bluetooth_connection_service_peek() && !flag_messaging_is_busy)
   {
-    // APP_LOG(APP_LOG_LEVEL_INFO, "**** I am inside 'update_weather()' about to request weather from the phone ***");
-
     // need to have some data - sending dummy
     DictionaryIterator *iter;
-    app_message_outbox_begin(&iter);
+    AppMessageResult result = app_message_outbox_begin(&iter);
+    if (result != APP_MSG_OK)
+    {
+      return;
+    }
+
     Tuplet dictionary[] = {
         TupletInteger(0, 0),
     };
     dict_write_tuplet(iter, &dictionary[0]);
 
-    flag_messaging_is_busy = true;
-    app_message_outbox_send();
+    result = app_message_outbox_send();
+    flag_messaging_is_busy = result == APP_MSG_OK;
   }
 }
 
 // showing temp
 static void show_temperature(int w_current)
 {
-  // APP_LOG(APP_LOG_LEVEL_INFO, "**** I am inside 'show_temperature()'; TEMP in Pebble: %d", w_current);
   static char buffer[6];
   snprintf(buffer, sizeof(buffer), "%i\u00B0", w_current);
   text_layer_set_text(text_temp, buffer);
@@ -504,9 +500,8 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed)
       text_layer_set_text(text_time, s_time);
     }
 
-    if (!(tick_time->tm_min % 60) && (tick_time->tm_sec == 0))
+    if (!(tick_time->tm_min % flag_weatherInterval))
     { // on configured weather interval change - update the weather
-      // APP_LOG(APP_LOG_LEVEL_INFO, "**** I am inside 'tick_handler()' about to call 'update_weather();' at minute %d min on %d interval", tick_time->tm_min, flag_weatherInterval);
       update_weather();
     }
   }
@@ -583,8 +578,6 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 {
   if (!s_app_active) return;
 
-  // APP_LOG(APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' Message from the phone received!");
-
   // Read first item
   Tuple *t = dict_read_first(iterator);
 
@@ -611,16 +604,24 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       // JS ready lets get the weather
       if (t->value->int16)
       {
-        // APP_LOG(APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' message 'JS is ready' received !");
-        flag_js_is_ready = true;
         need_weather = 1;
       }
       break;
 
       // config keys
     case KEY_TEMPERATURE_FORMAT: // if temp format changed from F to C or back - need re-request weather
-      // APP_LOG(APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' switching temp format");
       need_weather = 1;
+      break;
+    case KEY_WEATHER_INTERVAL:
+      {
+        uint8_t interval = normalize_weather_interval(t->value->int32);
+        if (interval != flag_weatherInterval)
+        {
+          persist_write_int(KEY_WEATHER_INTERVAL, interval);
+          flag_weatherInterval = interval;
+          need_weather = 1;
+        }
+      }
       break;
     case KEY_HOURS_MINUTES_SEPARATOR:
       if (t->value->int32 != flag_hoursMinutesSeparator)
@@ -678,25 +679,6 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
         layer_mark_dirty(graphics_layer);
       }
       break;
-    case KEY_MOCK_BATTERY:
-      {
-        int8_t mock = (int8_t)t->value->int32;
-        if (mock < MOCK_BATTERY_OFF)
-        {
-          mock = MOCK_BATTERY_OFF;
-        }
-        else if (mock > 100)
-        {
-          mock = 100;
-        }
-        if (mock != flag_mock_battery)
-        {
-          persist_write_int(KEY_MOCK_BATTERY, mock);
-          flag_mock_battery = mock;
-          battery_handler(battery_state_service_peek());
-        }
-      }
-      break;
     case KEY_TOP_ROW:
       if (t->value->int32 != flag_topRow)
       {
@@ -728,7 +710,6 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 
   if (need_weather)
   {
-    // APP_LOG(APP_LOG_LEVEL_INFO, "***** I am inside of 'inbox_received_callback()' about to call 'update_weather();");
     update_weather();
   }
 
@@ -743,21 +724,14 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   }
 }
 
-static void inbox_dropped_callback(AppMessageResult reason, void *context)
-{
-  // APP_LOG(APP_LOG_LEVEL_ERROR, "____Message dropped!");
-}
-
 static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context)
 {
   flag_messaging_is_busy = false;
-  // APP_LOG(APP_LOG_LEVEL_ERROR, "____Outbox send failed!");
 }
 
 static void outbox_sent_callback(DictionaryIterator *iterator, void *context)
 {
   flag_messaging_is_busy = false;
-  // APP_LOG(APP_LOG_LEVEL_INFO, "_____Outbox send success!");
 }
 
 // creates text layer at given coordinates, given font and alignment
@@ -774,19 +748,12 @@ TextLayer *create_text_layer(GRect coords, GFont font, GTextAlignment align)
 
 #define STATUS_LINE_HEIGHT 4
 
-static uint8_t effective_battery_percent(void)
-{
-  if (flag_mock_battery >= 0)
-  {
-    return (uint8_t)flag_mock_battery;
-  }
-  return (uint8_t)battery_state_service_peek().charge_percent;
-}
-
+#ifdef PBL_COLOR
 static bool is_light_background(void)
 {
   return flag_bgColor == 0xFFFFFF;
 }
+#endif
 
 static GColor battery_color_for_percent(uint8_t pct)
 {
@@ -811,7 +778,6 @@ static void bluetooth_handler(bool state)
 
   if (state)
   {
-    // APP_LOG(APP_LOG_LEVEL_INFO, "***** I am inside of 'bluetooth_handler()' about to call 'update_weather();");
     update_weather();
   }
 
@@ -840,7 +806,7 @@ static void bluetooth_handler(bool state)
 
 static void graphics_update_proc(Layer *layer, GContext *ctx)
 {
-  GColor color = battery_color_for_percent(effective_battery_percent());
+  GColor color = battery_color_for_percent(battery_state_service_peek().charge_percent);
   bool show_bt = flag_bluetooth_alert != BLUETOOTH_ALERT_DISABLED && bluetooth_connection_service_peek();
 
 #ifndef PBL_RECT
@@ -878,9 +844,8 @@ static void graphics_update_proc(Layer *layer, GContext *ctx)
 static void battery_handler(BatteryChargeState state)
 {
   if (!s_app_active) return;
-  (void)state;
 
-  uint8_t pct = effective_battery_percent();
+  uint8_t pct = state.charge_percent;
   snprintf(s_battery, sizeof(s_battery), "%d%%", pct);
   text_layer_set_text(text_battery, s_battery);
 
@@ -925,11 +890,6 @@ void handle_init(void)
     handle_deinit();
   }
 
-  //   app_focus_service_subscribe_handlers((AppFocusHandlers){
-  //     .did_focus = app_focus_changed,
-  //     .will_focus = app_focus_changing
-  //   });
-
   // going international
   setlocale(LC_ALL, "");
 
@@ -958,11 +918,12 @@ void handle_init(void)
   flag_topRow = persist_exists(KEY_TOP_ROW) ? persist_read_int(KEY_TOP_ROW) : ROW_FULL_DOW;
   flag_bottomRow = persist_exists(KEY_BOTTOM_ROW) ? persist_read_int(KEY_BOTTOM_ROW) : 1;
   flag_live_steps = persist_exists(KEY_LIVE_STEPS) ? persist_read_int(KEY_LIVE_STEPS) : 0;
+  flag_weatherInterval = normalize_weather_interval(
+      persist_exists(KEY_WEATHER_INTERVAL) ? persist_read_int(KEY_WEATHER_INTERVAL) : WEATHER_INTERVAL_DEFAULT);
   flag_bluetooth_alert = persist_exists(KEY_BLUETOOTH_ALERT) ? persist_read_int(KEY_BLUETOOTH_ALERT) : BLUETOOTH_ALERT_SILENT;
   flag_language = persist_exists(KEY_LANGUAGE) ? persist_read_int(KEY_LANGUAGE) : LANG_DEFAULT;
   flag_textColor = persist_exists(KEY_TEXT_COLOR) ? persist_read_int(KEY_TEXT_COLOR) : 0xFFFFFF;
   flag_bgColor   = persist_exists(KEY_BG_COLOR)   ? persist_read_int(KEY_BG_COLOR)   : 0x000000;
-  flag_mock_battery = persist_exists(KEY_MOCK_BATTERY) ? (int8_t)persist_read_int(KEY_MOCK_BATTERY) : MOCK_BATTERY_OFF;
   window_set_background_color(my_window, GColorFromHEX(flag_bgColor));
   tint_meteoicon();
 
@@ -1014,13 +975,10 @@ void handle_init(void)
   layer_set_hidden(bitmap_layer_get_layer(step_icon_bottom), true);
   layer_add_child(window_layer, bitmap_layer_get_layer(step_icon_bottom));
 
-  // getting battery info
   battery_state_service_subscribe(battery_handler);
-  battery_handler(battery_state_service_peek());
 
   // Register callbacks
   app_message_register_inbox_received(inbox_received_callback);
-  app_message_register_inbox_dropped(inbox_dropped_callback);
   app_message_register_outbox_failed(outbox_failed_callback);
   app_message_register_outbox_sent(outbox_sent_callback);
 
@@ -1039,11 +997,7 @@ void handle_init(void)
   else
     text_layer_set_text(text_temp, "...");
 
-  // initial bluetooth check
-  flag_bluetooth_alert = 0;
   bluetooth_connection_service_subscribe(bluetooth_handler);
-  bluetooth_handler(bluetooth_connection_service_peek());
-  flag_bluetooth_alert = persist_exists(KEY_BLUETOOTH_ALERT) ? persist_read_int(KEY_BLUETOOTH_ALERT) : BLUETOOTH_ALERT_SILENT;
 
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
 
@@ -1062,7 +1016,7 @@ void handle_init(void)
 
   s_app_active = true;
 
-  // Manually call the tick handler when the window is loading
+  battery_handler(battery_state_service_peek());
   tick_handler(t, DAY_UNIT | MINUTE_UNIT);
 }
 
@@ -1070,7 +1024,6 @@ void handle_deinit(void)
 {
   s_app_active = false;
   flag_messaging_is_busy = false;
-  flag_js_is_ready = false;
 
   tick_timer_service_unsubscribe();
   battery_state_service_unsubscribe();

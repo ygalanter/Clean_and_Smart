@@ -8,7 +8,7 @@ if [[ ! -f "$MASTER" ]]; then
   echo "Missing master: $MASTER" >&2
   exit 1
 fi
-for sz in 19 26 35; do
+for sz in 19 26; do
   convert "$MASTER" \
     -filter point -resize "${sz}x${sz}" \
     -fill white -opaque black \
