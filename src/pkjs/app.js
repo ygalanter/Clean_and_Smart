@@ -1,10 +1,11 @@
 var Clay = require('@rebble/clay');
 var clayConfig = require('./config.json');
-// Mock-battery Clay UI disabled; section preserved in config.mock-battery.ui.json.
-// C-side KEY_MOCK_BATTERY handler remains in main.c for dev builds.
 var clay = new Clay(clayConfig, null, { autoHandleEvents: false });
 
 var current_settings;
+
+var JS_READY_MAX_ATTEMPTS = 5;
+var JS_READY_RETRY_DELAY_MS = 1000;
 
 var DEFAULT_SETTINGS = {
   temperatureFormat:     0,
@@ -13,11 +14,11 @@ var DEFAULT_SETTINGS = {
   topRow:                0,
   bottomRow:             1,
   liveSteps:             0,
+  weatherInterval:       60,
   bluetoothAlert:        1,
   language:              255,
   textColor:             16777215,
-  bgColor:               0,
-  mockBattery:           -1
+  bgColor:               0
 };
 
 function mergeSettings(stored) {
@@ -31,6 +32,11 @@ function mergeSettings(stored) {
     }
   }
   return merged;
+}
+
+function normalizeWeatherInterval(interval) {
+  interval = parseInt(interval, 10);
+  return interval === 15 || interval === 30 || interval === 60 ? interval : 60;
 }
 
 function intColorToClayHex(n) {
@@ -50,10 +56,10 @@ function settingsToClay(settings) {
     KEY_BOTTOM_ROW:              String(settings.bottomRow),
     KEY_LIVE_STEPS:              !!settings.liveSteps,
     KEY_TEMPERATURE_FORMAT:      String(settings.temperatureFormat),
+    KEY_WEATHER_INTERVAL:        String(normalizeWeatherInterval(settings.weatherInterval)),
     KEY_BLUETOOTH_ALERT:         String(settings.bluetoothAlert),
     KEY_TEXT_COLOR:              intColorToClayHex(settings.textColor),
     KEY_BG_COLOR:                intColorToClayHex(settings.bgColor)
-    // KEY_MOCK_BATTERY:         String(settings.mockBattery)
   };
 }
 
@@ -84,7 +90,7 @@ function clayVal(clayData, key, defaultVal) {
 /*  ****************************************** Weather Section **************************************************** */
 
 // converts open-meteo weather icon code to Yahoo weather icon code (to reuse current bitmap with icon set)
-var OpenMetroCodeToYahooIcon = function (weather_code, is_day) {
+var openMeteoCodeToYahooIcon = function (weather_code, is_day) {
   var yahoo_icon = 3200; //initially not defined
 
   if (weather_code === 0) {
@@ -141,7 +147,7 @@ function getWeather(coords) {
     }
 
     Pebble.sendAppMessage({
-      'KEY_WEATHER_CODE': OpenMetroCodeToYahooIcon(code, is_day),
+      'KEY_WEATHER_CODE': openMeteoCodeToYahooIcon(code, is_day),
       'KEY_WEATHER_TEMP': temperature
     }, function () {}, function () {});
   };
@@ -164,6 +170,16 @@ function getLocation() {
   );
 }
 
+function notifyWatchReady(attempt) {
+  Pebble.sendAppMessage({ 'KEY_JSREADY': 1 }, function () {}, function () {
+    if (attempt < JS_READY_MAX_ATTEMPTS) {
+      setTimeout(function () {
+        notifyWatchReady(attempt + 1);
+      }, JS_READY_RETRY_DELAY_MS);
+    }
+  });
+}
+
 /*  ****************************************** Ready / AppMessage **************************************************** */
 
 Pebble.addEventListener('ready', function () {
@@ -181,7 +197,7 @@ Pebble.addEventListener('ready', function () {
 
   syncClayFromSettings(current_settings);
 
-  Pebble.sendAppMessage({ 'KEY_JSREADY': 1 }, function () {}, function () {});
+  notifyWatchReady(1);
 });
 
 Pebble.addEventListener('appmessage', function () {
@@ -212,7 +228,8 @@ Pebble.addEventListener('webviewclosed', function (e) {
   msg.KEY_TOP_ROW                 = clayVal(clayData, 'KEY_TOP_ROW');
   msg.KEY_BOTTOM_ROW              = clayVal(clayData, 'KEY_BOTTOM_ROW', 1);
   msg.KEY_LIVE_STEPS              = clayVal(clayData, 'KEY_LIVE_STEPS', 0);
-  // msg.KEY_MOCK_BATTERY         = clayVal(clayData, 'KEY_MOCK_BATTERY', -1);
+  msg.KEY_WEATHER_INTERVAL        = normalizeWeatherInterval(
+    clayVal(clayData, 'KEY_WEATHER_INTERVAL', 60));
 
   var newTempFormat = clayVal(clayData, 'KEY_TEMPERATURE_FORMAT');
   if (!current_settings || current_settings.temperatureFormat !== newTempFormat) {
@@ -226,11 +243,12 @@ Pebble.addEventListener('webviewclosed', function (e) {
     topRow:                clayVal(clayData, 'KEY_TOP_ROW'),
     bottomRow:             clayVal(clayData, 'KEY_BOTTOM_ROW', 1),
     liveSteps:             clayVal(clayData, 'KEY_LIVE_STEPS', 0),
+    weatherInterval:       normalizeWeatherInterval(
+      clayVal(clayData, 'KEY_WEATHER_INTERVAL', 60)),
     bluetoothAlert:        clayVal(clayData, 'KEY_BLUETOOTH_ALERT'),
     language:              clayVal(clayData, 'KEY_LANGUAGE', 255),
     textColor:             clayVal(clayData, 'KEY_TEXT_COLOR', 16777215),
     bgColor:               clayVal(clayData, 'KEY_BG_COLOR', 0)
-    // mockBattery:         clayVal(clayData, 'KEY_MOCK_BATTERY', -1)
   };
   localStorage.setItem('current_settings', JSON.stringify(current_settings));
 

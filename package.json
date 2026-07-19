@@ -23,10 +23,10 @@
             "KEY_LIVE_STEPS": 9,
             "KEY_BG_COLOR": 12,
             "KEY_LANGUAGE": 10,
-            "KEY_MOCK_BATTERY": 13,
             "KEY_TEXT_COLOR": 11,
             "KEY_TEMPERATURE_FORMAT": 3,
             "KEY_TOP_ROW": 6,
+            "KEY_WEATHER_INTERVAL": 14,
             "KEY_WEATHER_CODE": 0,
             "KEY_WEATHER_TEMP": 1
         },
@@ -165,5 +165,5 @@
             "watchface": true
         }
     },
-    "version": "2.52.0"
+    "version": "2.53.0"
 }
